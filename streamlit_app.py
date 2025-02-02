@@ -11,7 +11,7 @@ if st.button("Сгенерировать"):
     
     client = OpenAI(
         base_url="https://api.studio.nebius.ai/v1/",
-        api_key=st.secrets["NEBIUS_API_KEY"],
+        api_key=st.secrets.NEBIUS_API_KEY,
     )
 
     completion = client.chat.completions.create(
