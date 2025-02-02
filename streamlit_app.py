@@ -17,7 +17,7 @@ def OpenAIChat(promt):
             "content": promt
             }
         ],
-        max_tokens=1000,
+        max_tokens=100,
         temperature=1,
         #top_p=1,
         #top_k=50,
@@ -85,61 +85,21 @@ if submitted:
     Верни структурированный JSON в формате: {{"characters": [{{..., ...]}}}}"""
 
 
-    promt = "Say hello!"
-
-
-    client = OpenAI(
-        base_url="https://api.studio.nebius.ai/v1/",
-        api_key=st.secrets.NEBIUS_API_KEY,
-    )
-
-    completion = client.chat.completions.create(
-        model="deepseek-ai/DeepSeek-R1",
-        messages=[
-            {
-            "role": "user",
-            "content": promt
-            }
-        ],
-        max_tokens=100,
-        temperature=1,
-        #top_p=1,
-        #top_k=50,
-        #n=1,
-        #stream=False,
-        #stream_options=null,
-        #stop=null,
-        #presence_penalty=0,
-        #frequency_penalty=0,
-        #logit_bias=null,
-        #logprobs=False,
-        #top_logprobs=null,
-        #user=null,
-        #extra_body={
-        #    "guided_json": {"type": "object", "properties": {...}}
-        #},
-        response_format={
-            "type": "json_object"
-        }
-    )
-
-    st.write(completion.choices[0].message.content)
-
-    '''
+    
     try:
-        #with st.spinner("Генерация персонажей..."):
-        generated_data = OpenAIChat(prompt)
-        st.write(generated_data)
+        with st.spinner("Генерация персонажей..."):
+            generated_data = OpenAIChat(prompt)
+            st.write(generated_data)
         
         st.success("Персонажи успешно сгенерированы!")
         st.json(generated_data)
 
-        #with st.spinner("Загрузка в Airtable..."):
-        uploaded_count = upload_to_airtable(generated_data)
+        with st.spinner("Загрузка в Airtable..."):
+            uploaded_count = upload_to_airtable(generated_data)
         
         st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
     
     except Exception as e:
         st.error(f"Ошибка: {str(e)}")
         st.stop()
-    '''
+    
