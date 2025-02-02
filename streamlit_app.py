@@ -101,7 +101,7 @@ if submitted:
             "content": promt
             }
         ],
-        max_tokens=1000,
+        max_tokens=100,
         temperature=1,
         #top_p=1,
         #top_k=50,
