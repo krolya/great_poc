@@ -10,7 +10,7 @@ def OpenAIChat(promt):
     )
 
     completion = client.chat.completions.create(
-        model="deepseek-ai/DeepSeek-R1",
+        model="deepseek-ai/DeepSeek-V3",
         messages=[
             {
             "role": "user",
