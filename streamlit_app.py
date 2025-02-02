@@ -87,6 +87,45 @@ if submitted:
 
     promt = "Say hello!"
 
+
+    client = OpenAI(
+        base_url="https://api.studio.nebius.ai/v1/",
+        api_key=st.secrets.NEBIUS_API_KEY,
+    )
+
+    completion = client.chat.completions.create(
+        model="deepseek-ai/DeepSeek-R1",
+        messages=[
+            {
+            "role": "user",
+            "content": promt
+            }
+        ],
+        max_tokens=1000,
+        temperature=1,
+        #top_p=1,
+        #top_k=50,
+        #n=1,
+        #stream=False,
+        #stream_options=null,
+        #stop=null,
+        #presence_penalty=0,
+        #frequency_penalty=0,
+        #logit_bias=null,
+        #logprobs=False,
+        #top_logprobs=null,
+        #user=null,
+        #extra_body={
+        #    "guided_json": {"type": "object", "properties": {...}}
+        #},
+        response_format={
+            "type": "json_object"
+        }
+    )
+
+    st.write(completion.choices[0].message.content)
+
+    '''
     try:
         #with st.spinner("Генерация персонажей..."):
         generated_data = OpenAIChat(prompt)
@@ -103,4 +142,4 @@ if submitted:
     except Exception as e:
         st.error(f"Ошибка: {str(e)}")
         st.stop()
-      
+    '''
