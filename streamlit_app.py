@@ -3,7 +3,7 @@ import json
 from openai import OpenAI
 from pyairtable import Api
 
-def OpenAIChat(promt,num_personas):
+def OpenAIChat(promt):
     client = OpenAI(
         base_url="https://api.studio.nebius.ai/v1/",
         api_key=st.secrets.NEBIUS_API_KEY,
