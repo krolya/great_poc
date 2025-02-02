@@ -53,4 +53,4 @@ if st.button("Сгенерировать"):
         }
     )
 
-    st.write(completion.to_json()))  
+    st.write(completion.to_json())  
