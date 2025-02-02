@@ -30,23 +30,23 @@ if st.button("Сгенерировать"):
             "content": "Hello! How can I assist you with chemistry today? And did you hear about the cat who became a chemist? She had nine lives, but she only needed one formula!"
             }
         ],
-        max_tokens=100,
+        max_tokens=1000,
         temperature=1,
-        top_p=1,
-        top_k=50,
-        n=1,
-        stream=False,
-        stream_options=null,
-        stop=null,
-        presence_penalty=0,
-        frequency_penalty=0,
-        logit_bias=null,
-        logprobs=False,
-        top_logprobs=null,
-        user=null,
-        extra_body={
-            "guided_json": {"type": "object", "properties": {...}}
-        },
+        #top_p=1,
+        #top_k=50,
+        #n=1,
+        #stream=False,
+        #stream_options=null,
+        #stop=null,
+        #presence_penalty=0,
+        #frequency_penalty=0,
+        #logit_bias=null,
+        #logprobs=False,
+        #top_logprobs=null,
+        #user=null,
+        #extra_body={
+        #    "guided_json": {"type": "object", "properties": {...}}
+        #},
         response_format={
             "type": "json_object"
         }
