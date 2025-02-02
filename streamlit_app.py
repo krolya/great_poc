@@ -85,21 +85,15 @@ if submitted:
     Верни структурированный JSON в формате: {{"characters": [{{..., ...]}}}}"""
 
 
+    with st.spinner("Генерация персонажей..."):
+        generated_data = OpenAIChat(prompt)
+        st.write(generated_data)
     
-    try:
-        with st.spinner("Генерация персонажей..."):
-            generated_data = OpenAIChat(prompt)
-            st.write(generated_data)
-        
-        st.success("Персонажи успешно сгенерированы!")
-        st.json(generated_data)
+    st.success("Персонажи успешно сгенерированы!")
+    st.json(generated_data)
 
-        with st.spinner("Загрузка в Airtable..."):
-            uploaded_count = upload_to_airtable(generated_data)
-        
-        st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
+    with st.spinner("Загрузка в Airtable..."):
+        uploaded_count = upload_to_airtable(generated_data)
     
-    except Exception as e:
-        st.error(f"Ошибка: {str(e)}")
-        st.stop()
+    st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
     
