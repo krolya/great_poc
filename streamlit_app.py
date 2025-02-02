@@ -41,7 +41,7 @@ if st.button("Сгенерировать"):
         presence_penalty=0,
         frequency_penalty=0,
         logit_bias=null,
-        logprobs=false,
+        logprobs=False,
         top_logprobs=null,
         user=null,
         extra_body={
