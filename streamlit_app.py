@@ -1,6 +1,5 @@
 import streamlit as st
-import requests
-from openai import OpenAI
+import OpenAI
 
 st.title("Генератор фидбеков")
 
