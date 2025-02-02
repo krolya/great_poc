@@ -38,8 +38,8 @@ def OpenAIChat(promt):
             "type": "json_object"
         }
     )
-
-    return(completion.to_json())
+    
+    return json.loads(completion.choices[0].message.content)
 
 def upload_to_airtable(data):
     api = Api(st.secrets.AIRTABLE_API_KEY)
