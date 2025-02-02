@@ -18,8 +18,8 @@ def OpenAIChat(promt):
             "content": promt
             }
         ],
-        max_tokens=100,
-        temperature=1,
+        #max_tokens=100,
+        #temperature=1,
         #top_p=1,
         #top_k=50,
         #n=1,
