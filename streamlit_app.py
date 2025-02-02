@@ -17,7 +17,7 @@ def OpenAIChat(promt):
             "content": promt
             }
         ],
-        max_tokens=10000,
+        max_tokens=1000,
         temperature=1,
         #top_p=1,
         #top_k=50,
@@ -83,6 +83,9 @@ if submitted:
     }}
     
     Верни структурированный JSON в формате: {{"characters": [{{..., ...]}}}}"""
+
+
+    promt = "Say hello!"
 
     try:
         with st.spinner("Генерация персонажей..."):
