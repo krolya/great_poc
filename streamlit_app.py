@@ -35,7 +35,7 @@ if st.button("Сгенерировать"):
         top_p=1,
         top_k=50,
         n=1,
-        stream=false,
+        stream=False,
         stream_options=null,
         stop=null,
         presence_penalty=0,
