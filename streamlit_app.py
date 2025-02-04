@@ -43,8 +43,8 @@ def OpenAIChat(promt):
     return completion.choices[0].message.content
 
 def upload_to_airtable(data):
-    api = Api(st.secrets.AIRTABLE_API_KEY)
-    table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_NAME)
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
     
     records = [{"fields": person} for person in data["characters"]]
     response = table.batch_create(records)
@@ -80,7 +80,7 @@ if submitted:
         }}
     }}
     
-    Верни структурированный JSON в формате и только его без каких либо пояснений или чего-либо еще: 
+    Верни структурированный JSON в формате и только его без каких либо пояснений или чего-либо еще в ответе: 
     
     {{
         "records": [
