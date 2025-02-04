@@ -64,14 +64,11 @@ if submitted:
             "fields": {{
                 "name": "случайное имя по полу",
                 "gender": "мужской/женский",
-                "marital status id": {{
-                    "М": ["1-Холост", "2-В браке", "3-Гражданский брак", "4-Разведен", "5-Вдовец"],
-                    "Ж": ["1-Незамужем", "2-В браке", "3-Гражданский брак", "4-Разведена", "5-Вдова"]
-                }},
+                "marital status id": "1 случайный ID из списка ["recB5tgjv9b2o2aPs", "recCO6SsPJva6VXmU", "recmMt8VCjPpC9O4I", "recEetmWrUmBJEh2I", "recTqqBXrv4PfjNDW"]",
                 "children": "число ≥0 с учетом возраста",
                 "income": "15-1500 тыс.руб",
                 "age": "3-99 с логикой",
-                "interests": "3-5 уникальных ID из 7-111",
+                "interests": "2 уникальных ID из списка ["rec0ExsZkszeavFi9", "recWPIWQQuEfQUfhC", "rec8DycBdP3nfIYAG", "recEdaM1lQmsr3Au8", "rec7kDVeNmJSleNKD"]",
                 "description": "1-2 предложения с характером и интересами"
             }},
             "logic_checks": [
@@ -83,7 +80,47 @@ if submitted:
         }}
     }}
     
-    Верни структурированный JSON в формате: {{"characters": [{{..., ...]}}}}"""
+    Верни структурированный JSON в формате: 
+    
+    {{
+        "records": [
+            {{
+        "fields": {{
+            "Name": "Иван Петров",
+            "Gender": "Мужской",
+            "Marital status ID": [
+            "recB5tgjv9b2o2aPs"
+            ],
+            "Children": 0,
+            "Income": 120000,
+            "Age": 28,
+            "Interests": [
+            "rec0ExsZkszeavFi9"
+            ]
+        }}
+        }},
+        {{
+        "fields": {{
+            "Name": "Анна Смирнова",
+            "Gender": "Женский",
+            "Marital status ID": [
+            "recCO6SsPJva6VXmU"
+            ],
+            "Children": 2,
+            "Income": 80000,
+            "Age": 35,
+            "Interests": [
+            "rechEsuoL1qsAFAiP"
+            ]
+        }}
+        }}
+    ],
+    "typecast": true
+    }}'
+    
+    
+    
+    """
 
 
     with st.spinner("Генерация персонажей..."):
