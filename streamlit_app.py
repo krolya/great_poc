@@ -132,10 +132,12 @@ def GeneratePerson():
     
     st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
 
+# Настройка страницы
+st.set_page_config(page_title="Генерация персон", layout="wide")
+
 with st.form("persona_form"):
 
-    # Настройка страницы
-    st.set_page_config(page_title="Генерация персон", layout="wide")
+    
 
     # Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
     st.markdown("""
