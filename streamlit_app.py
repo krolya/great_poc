@@ -135,103 +135,103 @@ def GeneratePerson():
 # Настройка страницы
 st.set_page_config(page_title="Генерация персон", layout="wide")
 
-with st.form("persona_form"):
+
 
     
 
-    # Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
-    st.markdown("""
-        <style>
-            .header {
-                height: 5vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+# Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
+st.markdown("""
+<style>
+    .header {
+        height: 5vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-    # Верхняя часть — заголовок
-    st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
+# Верхняя часть — заголовок
+st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
 
-    # Разбиваем остальную область на две колонки с пропорцией 30:70
-    col_left, col_right = st.columns([3, 7])
+# Разбиваем остальную область на две колонки с пропорцией 30:70
+col_left, col_right = st.columns([3, 7])
 
-    # Левая колонка: "Целевая аудитория" и фильтры
-    with col_left:
-        st.header("Целевая аудитория")
-        
-        # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
-        gender_ratio = st.slider("Соотношение мужчин и женщин (%)", min_value=0, max_value=100, value=50)
-        
-        # 5.2. Двойной слайдер для выбора диапазона возраста
-        age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
-        
-        # 5.3. Фильтр «Образование»
-        st.markdown("#### Образование")
-        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
-        education_selected = st.multiselect("Выберите образование", options=education_options,
-                                            default=education_options)
-        
-        # 5.4. Фильтр «Регион проживания»
-        st.markdown("#### Регион проживания")
-        # Пример списка регионов. В списке обязательно первыми указываем Москву и Московскую область.
-        regions = [
-            "Москва", "Московская область", "Санкт-Петербург", "Краснодарский край",
-            "Республика Татарстан", "Ленинградская область", "Свердловская область",
-            "Нижегородская область", "Ростовская область", "Челябинская область"
-        ]
-        # Инициализируем состояние выбранных регионов (по умолчанию Москва и Московская область)
-        if "selected_regions" not in st.session_state:
-            st.session_state.selected_regions = ["Москва", "Московская область"]
-        
-        # Кнопки «Выбрать все» и «Снять выделение»
-        btn_cols = st.columns(2)
-        if btn_cols[0].button("Выбрать все регионы"):
-            st.session_state.selected_regions = regions
-            st.experimental_rerun()
-        if btn_cols[1].button("Снять выделение регионов"):
-            st.session_state.selected_regions = []
-            st.experimental_rerun()
-        
-        regions_selected = st.multiselect("Выберите регионы", options=regions,
-                                        default=st.session_state.selected_regions, key="regions_multiselect")
-        
-        # 5.5. Фильтр «Размер населенного пункта»
-        st.markdown("#### Размер населенного пункта")
-        city_size_options = [
-            "До 100 0000 человек",
-            "От 100 000 до 500 000",
-            "от 500 000 до 1 000 000",
-            "свыше 1 000 000"
-        ]
-        city_size_selected = st.multiselect("Выберите размер населенного пункта", options=city_size_options,
-                                            default=city_size_options)
-        
-        # 5.6. Двойной слайдер для выбора диапазона количества детей
-        children_count = st.slider("Количество детей", min_value=0, max_value=10, value=(0, 3))
-        
-        # 5.7. Двойной слайдер для выбора диапазона возраста детей
-        children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
-        
-        # 5.8. Фильтр «Семейное положение»
-        st.markdown("#### Семейное положение")
-        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
-        marital_selected = st.multiselect("Выберите семейное положение", options=marital_options,
-                                        default=marital_options)
-        
-        # 5.9. Поле для ввода тэгов
-        tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
+# Левая колонка: "Целевая аудитория" и фильтры
+with col_left:
+    st.header("Целевая аудитория")
 
-    # Правая колонка: "Генерация"
-    with col_right:
-        st.header("Генерация")
-        st.write("Здесь можно разместить настройки генерации или результаты.")
-        
-        # Например, можно добавить кнопку для запуска генерации
-        if st.button("Сгенерировать"):
-            st.info("Генерация началась...")
-            GeneratePerson
+    # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
+    gender_ratio = st.slider("Соотношение мужчин и женщин (%)", min_value=0, max_value=100, value=50)
+
+    # 5.2. Двойной слайдер для выбора диапазона возраста
+    age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
+
+    # 5.3. Фильтр «Образование»
+    st.markdown("#### Образование")
+    education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
+    education_selected = st.multiselect("Выберите образование", options=education_options,
+                                        default=education_options)
+
+    # 5.4. Фильтр «Регион проживания»
+    st.markdown("#### Регион проживания")
+    # Пример списка регионов. В списке обязательно первыми указываем Москву и Московскую область.
+    regions = [
+        "Москва", "Московская область", "Санкт-Петербург", "Краснодарский край",
+        "Республика Татарстан", "Ленинградская область", "Свердловская область",
+        "Нижегородская область", "Ростовская область", "Челябинская область"
+    ]
+    # Инициализируем состояние выбранных регионов (по умолчанию Москва и Московская область)
+    if "selected_regions" not in st.session_state:
+        st.session_state.selected_regions = ["Москва", "Московская область"]
+
+    # Кнопки «Выбрать все» и «Снять выделение»
+    btn_cols = st.columns(2)
+    if btn_cols[0].button("Выбрать все регионы"):
+        st.session_state.selected_regions = regions
+        st.experimental_rerun()
+    if btn_cols[1].button("Снять выделение регионов"):
+        st.session_state.selected_regions = []
+        st.experimental_rerun()
+
+    regions_selected = st.multiselect("Выберите регионы", options=regions,
+                                    default=st.session_state.selected_regions, key="regions_multiselect")
+
+    # 5.5. Фильтр «Размер населенного пункта»
+    st.markdown("#### Размер населенного пункта")
+    city_size_options = [
+        "До 100 0000 человек",
+        "От 100 000 до 500 000",
+        "от 500 000 до 1 000 000",
+        "свыше 1 000 000"
+    ]
+    city_size_selected = st.multiselect("Выберите размер населенного пункта", options=city_size_options,
+                                        default=city_size_options)
+
+    # 5.6. Двойной слайдер для выбора диапазона количества детей
+    children_count = st.slider("Количество детей", min_value=0, max_value=10, value=(0, 3))
+
+    # 5.7. Двойной слайдер для выбора диапазона возраста детей
+    children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
+
+    # 5.8. Фильтр «Семейное положение»
+    st.markdown("#### Семейное положение")
+    marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
+    marital_selected = st.multiselect("Выберите семейное положение", options=marital_options,
+                                    default=marital_options)
+
+    # 5.9. Поле для ввода тэгов
+    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
+
+# Правая колонка: "Генерация"
+with col_right:
+    st.header("Генерация")
+    st.write("Здесь можно разместить настройки генерации или результаты.")
+
+    # Например, можно добавить кнопку для запуска генерации
+    if st.button("Сгенерировать"):
+        st.info("Генерация началась...")
+        GeneratePerson()
     
     
     
