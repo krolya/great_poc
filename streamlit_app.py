@@ -95,32 +95,14 @@ if submitted:
         "records": [
             {{
         "fields": {{
-            "Name": "Иван Петров",
-            "Gender": "Мужской",
-            "Marital status ID": [
-            "recB5tgjv9b2o2aPs"
-            ],
-            "Children": 0,
-            "Income": 120000,
-            "Age": 28,
-            "Interests": [
-            "rec0ExsZkszeavFi9"
-            ]
+            "name": "Иван Петров",
+            "gender": "Мужской"
         }}
         }},
         {{
         "fields": {{
-            "Name": "Анна Смирнова",
-            "Gender": "Женский",
-            "Marital status ID": [
-            "recCO6SsPJva6VXmU"
-            ],
-            "Children": 2,
-            "Income": 80000,
-            "Age": 35,
-            "Interests": [
-            "rechEsuoL1qsAFAiP"
-            ]
+            "name": "Анна Смирнова",
+            "gender": "Женский"
         }}
         }}
     ],
