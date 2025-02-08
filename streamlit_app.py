@@ -47,8 +47,11 @@ def upload_to_airtable(data):
     table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
     
 
-    #records = [{"fields": person} for person in data["records"]]
-    for person in json.loads(data):
+    #records = [{"fields": person} for person in data["records"]]]
+    records = json.loads(data)
+    st.write(person)
+    st.write(len(person))
+    for person in records:
         st.write(person)
     #st.write(data)
     #response = table.batch_create(data)
