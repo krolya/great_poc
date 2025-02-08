@@ -53,6 +53,7 @@ def upload_to_airtable(data):
     st.write(len(records))
     for person in records:
         st.write(person)
+        st.write(len(person))
     #st.write(data)
     #response = table.batch_create(data)
     #st.write(response.json())
