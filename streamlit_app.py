@@ -88,16 +88,12 @@ if submitted:
     {{
         "records": [
             {{
-        "fields": {{
             "name": "Иван Петров",
             "gender": "Мужской"
-        }}
         }},
         {{
-        "fields": {{
             "name": "Анна Смирнова",
             "gender": "Женский"
-        }}
         }}
     ],
     "typecast": false
