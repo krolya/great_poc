@@ -58,7 +58,7 @@ def upload_to_airtable(data):
 
     response = table.batch_create(records["records"])
     st.write(response)
-    return len(response.json()["records"])
+    return len(response)
 
 def GeneratePerson():
     prompt = f"""Сгенерируй JSON-объект со случайными персонажами по следующим правилам:
