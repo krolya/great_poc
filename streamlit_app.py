@@ -133,10 +133,7 @@ def GeneratePerson():
     st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
 
 # Настройка страницы
-st.set_page_config(page_title="Генерация персон", layout="wide")
-
-
-
+st.set_page_config(page_title="Более нормальный человек", layout="wide")
     
 
 # Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
@@ -152,7 +149,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Верхняя часть — заголовок
-st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
+#st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
 
 # Разбиваем остальную область на две колонки с пропорцией 30:70
 col_left, col_right = st.columns([3, 7])
@@ -226,7 +223,7 @@ with col_left:
 # Правая колонка: "Генерация"
 with col_right:
     st.header("Генерация")
-    st.write("Здесь можно разместить настройки генерации или результаты.")
+    #st.write("Здесь можно разместить настройки генерации или результаты.")
 
     # Например, можно добавить кнопку для запуска генерации
     if st.button("Сгенерировать"):
