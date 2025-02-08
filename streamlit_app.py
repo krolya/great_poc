@@ -48,6 +48,7 @@ def upload_to_airtable(data):
     
     #records = [{"fields": person} for person in data["records"]]
     response = table.batch_create(data)
+    st.write(response.json())
     return len(response)
 
 with st.form("persona_form"):
