@@ -137,16 +137,16 @@ st.set_page_config(page_title="Более нормальный человек", 
     
 
 # Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
-st.markdown("""
-<style>
-    .header {
-        height: 5vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-</style>
-""", unsafe_allow_html=True)
+#st.markdown("""
+#<style>
+#    .header {
+#        height: 5vh;
+#        display: flex;
+#        align-items: center;
+#        justify-content: center;
+#    }
+#</style>
+#""", unsafe_allow_html=True)
 
 # Верхняя часть — заголовок
 #st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
@@ -158,8 +158,11 @@ col_left, col_right = st.columns([3, 7])
 with col_left:
     st.header("Целевая аудитория")
 
+    # 5.0. Слайдер для выбора количества персон для генерации
+    number_of_persons = st.number_input("Количество персон для генерации", min_value=0, max_value=10000, value=20)
+
     # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
-    gender_ratio = st.slider("Соотношение мужчин и женщин (%)", min_value=0, max_value=100, value=50)
+    gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
 
     # 5.2. Двойной слайдер для выбора диапазона возраста
     age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
@@ -194,6 +197,41 @@ with col_left:
     regions_selected = st.multiselect("Выберите регионы", options=regions,
                                     default=st.session_state.selected_regions, key="regions_multiselect")
 
+
+    all_regions = [
+        "Москва",
+        "Московская область",
+        "Санкт-Петербург",
+        "Новосибирская область",
+        "Свердловская область",
+        "Краснодарский край",
+        "Республика Татарстан",
+        "Челябинская область",
+        "Самарская область",
+        "Оренбургская область"
+    ]
+    with st.expander("Регион проживания", expanded=True):
+        # Кнопки для выбора/снятия всех флажков
+        col_btn1, col_btn2 = st.columns(2)
+        if col_btn1.button("Выбрать все", key="select_all_regions"):
+            for region in all_regions:
+                st.session_state[f"region_{region}"] = True
+        if col_btn2.button("Снять все", key="deselect_all_regions"):
+            for region in all_regions:
+                st.session_state[f"region_{region}"] = False
+
+        selected_regions = []
+        for region in all_regions:
+            # По умолчанию Москва и Московская область включены
+            default = True if region in ["Москва", "Московская область"] else False
+            checked = st.checkbox(
+                region,
+                value=st.session_state.get(f"region_{region}", default),
+                key=f"region_{region}"
+            )
+            if checked:
+                selected_regions.append(region)
+
     # 5.5. Фильтр «Размер населенного пункта»
     st.markdown("#### Размер населенного пункта")
     city_size_options = [
@@ -216,6 +254,13 @@ with col_left:
     marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
     marital_selected = st.multiselect("Выберите семейное положение", options=marital_options,
                                     default=marital_options)
+    
+    # 5.8. Фильтр «Семейное положение»
+    with st.expander("Семейное положение", expanded=True):
+        married = st.checkbox("В браке", key="married")
+        divorced = st.checkbox("Разведен(-а)", key="divorced")
+        in_relationship = st.checkbox("В отношениях", key="in_relationship")
+        single = st.checkbox("Одинок (-а)", key="single")
 
     # 5.9. Поле для ввода тэгов
     tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
