@@ -161,7 +161,7 @@ with col_left:
     with st.expander("Основные настройки", expanded=True):
 
         # 5.0. Слайдер для выбора количества персон для генерации
-        number_of_persons = st.number_input("Количество персон для генерации", min_value=0, max_value=10000, value=20)
+        number_of_persons = st.slider("Количество персон для генерации", min_value=0, max_value=10000, value=20)
 
         # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
         gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
