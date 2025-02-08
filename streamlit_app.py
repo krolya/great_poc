@@ -46,11 +46,14 @@ def upload_to_airtable(data):
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
     
+
     #records = [{"fields": person} for person in data["records"]]
-    st.write(data)
-    response = table.batch_create(data)
-    st.write(response.json())
-    return len(response)
+    for person in data[records]
+        st.write(person)
+    #st.write(data)
+    #response = table.batch_create(data)
+    #st.write(response.json())
+    #return len(response)
 
 with st.form("persona_form"):
     num_people = st.number_input("Количество персон", min_value=1, max_value=20, value=1)
