@@ -48,7 +48,7 @@ def upload_to_airtable(data):
     
 
     #records = [{"fields": person} for person in data["records"]]
-    for person in data[records]:
+    for person in json.loads(data):
         st.write(person)
     #st.write(data)
     #response = table.batch_create(data)
