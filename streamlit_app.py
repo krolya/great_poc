@@ -133,7 +133,7 @@ if submitted:
         st.write(generated_data)
     
     st.success("Персонажи успешно сгенерированы!")
-    st.json(generated_data)
+    #st.json(generated_data)
 
     with st.spinner("Загрузка в Airtable..."):
         uploaded_count = upload_to_airtable(generated_data)
