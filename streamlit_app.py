@@ -51,13 +51,13 @@ def upload_to_airtable(data):
     records = json.loads(data)
     #st.write(records)
     #st.write(len(records))
-    #for person in records:
-    #    st.write(person)
-    #    st.write(len(person))
-    #st.write(data)
-    response = table.batch_create(records)
-    st.write(response.json())
-    return len(response)
+    for person in records:
+        st.write(len(person))
+        response = table.create(person)
+        st.write(response.json())
+
+    #response = table.batch_create(records)
+    return 1
 
 with st.form("persona_form"):
     num_people = st.number_input("Количество персон", min_value=1, max_value=20, value=1)
