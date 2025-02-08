@@ -72,13 +72,7 @@ if submitted:
         "rules": {{
             "fields": {{
                 "name": "случайное имя по полу",
-                "gender": "мужской/женский",
-                "marital status id": "1 случайный ID из списка ["recB5tgjv9b2o2aPs", "recCO6SsPJva6VXmU", "recmMt8VCjPpC9O4I", "recEetmWrUmBJEh2I", "recTqqBXrv4PfjNDW"]",
-                "children": "число ≥0 с учетом возраста",
-                "income": "15-1500 тыс.руб",
-                "age": "3-99 с логикой",
-                "interests": "2 уникальных ID из списка ["rec0ExsZkszeavFi9", "recWPIWQQuEfQUfhC", "rec8DycBdP3nfIYAG", "recEdaM1lQmsr3Au8", "rec7kDVeNmJSleNKD"]",
-                "description": "1-2 предложения с характером и интересами"
+                "gender": "мужской/женский"
             }},
             "logic_checks": [
                 "Возраст >= 18 если есть дети",
