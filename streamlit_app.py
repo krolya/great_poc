@@ -20,6 +20,7 @@ income_selected = ["Низкий", "Низкий плюс"," Средний", "�
 age_range = (18, 60)
 gender_ratio = 50
 model_name = "deepseek-ai/DeepSeek-V3"
+debug = False
 
 #функции
 def OpenAIChat(promt):
@@ -68,7 +69,7 @@ def upload_to_airtable(data):
     
     #records = [{"fields": person} for person in data["records"]]]
     st.info("Загружаем данные в Airtable...")
-    st.write(data)
+    #st.write(data)
     records = json.loads(data)
     #st.write(records)
     #st.write(len(records))
@@ -78,7 +79,7 @@ def upload_to_airtable(data):
     #    st.write(response.json())
 
     response = table.batch_create(records["records"])
-    st.write(response)
+    if debug: st.write(response)
     return len(response)
 
 def GeneratePerson():
@@ -128,13 +129,12 @@ def GeneratePerson():
     }}
 
     """
-
-    st.write(prompt)
+    if debug: st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
         #st.write(generation_id)
         generated_data = OpenAIChat(prompt)
-        st.write(generated_data)
+        if debug: st.write(generated_data)
     
     st.success("Персонажи успешно сгенерированы!")
     
@@ -258,6 +258,8 @@ with col_left:
 # Правая колонка: "Генерация"
 with col_right:
     st.header("Генерация персон")
+
+    debug = st.checkbox("Выводить отладочную информацию", value=False)
     #st.write("Здесь можно разместить настройки генерации или результаты.")
 
     # 5.10. Поле для ввода сообщения для проверки
