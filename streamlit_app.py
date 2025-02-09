@@ -45,7 +45,7 @@ def OpenAIChat(promt):
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="chatgpt-4o-latest",
         messages=[{"role":"user","content":"WAZZUP!"}],
         response_format={"type": "json_object"}
     )
