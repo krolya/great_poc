@@ -29,7 +29,7 @@ def OpenAIChat(promt):
             base_url="https://api.openai.com/v1/chat/completions",
             api_key=st.secrets.OPENAI_API_KEY,
         )
-    elif
+    else
         client = OpenAI(
             base_url="https://api.studio.nebius.ai/v1/",
             api_key=st.secrets.NEBIUS_API_KEY,
