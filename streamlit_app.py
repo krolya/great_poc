@@ -181,11 +181,28 @@ def AnalyseAD():
 
                 if st.session_state.debug: st.write(record)
                 #st.write(record["fields"]["Name"])
+                description = record.fields["Description"]
+                name = record.fields["Name"]
+                age = record.fields["Age"]
+                region = record.fields["Region"]
+                city_size = record.fields["City size"]
+                children = record.fields["Children"]
+                income = record.fields["Income"]
+                marital_status = record.fields["Marital status"]
+                education = record.fields["Education"]
+                children_age_1 = record.fields["Children age 1"]
+                children_age_2 = record.fields["Children age 2"]
+                children_age_3 = record.fields["Children age 3"]
+                children_age_4 = record.fields["Children age 4"]
+                children_age_5 = record.fields["Children age 5"]
+
+
 
                 prompt = f"""
-                Представь себе, что ты {record.fields.Description}, тебя зовут {record.fields.Name} и тебе {record.fields.Age} лет, 
-                ты живешь в {record.fields.Region}, в городе с населением {record.fields.City size}, у тебя {record.fields.Children} детей, 
-                твой доход {record.fields.Income}, ты {record.fields["Marital status"]}, твое образование {record.fields.Education}.
+                Представь себе, что ты {description}, тебя зовут {name} и тебе {age} лет, 
+                ты живешь в {region}, в городе с населением {city_size}, у тебя {children} детей, 
+                возрастом {children_age_1}, {children_age_2}, {children_age_3}, {children_age_4}, {children_age_5}, 
+                твой доход {income}, ты {marital_status}, твое образование {education}.
 
                 Внимательно прочитай описание рекламы, которое дано ниже:
                     {ad_description} 
