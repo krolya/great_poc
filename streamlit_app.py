@@ -35,6 +35,7 @@ def OpenAIChat(promt):
             api_key=st.secrets.NEBIUS_API_KEY,
         )
 
+    st.write(model)
     completion = client.chat.completions.create(
         model,
         
