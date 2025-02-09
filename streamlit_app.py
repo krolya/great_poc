@@ -65,10 +65,8 @@ def OpenAIChat(promt):
         #    "guided_json": {"type": "object", "properties": {...}}
         #},
    
-    if st.session_state.debug: 
-        st.write(completion)
-        st.write(completion.choices[0])
-        st.write(completion.choices[0].message)
+    if st.session_state.debug:
+        st.info("Что вернул OpenAI:") 
         st.write(completion.choices[0].message.content)
 
     return completion.choices[0].message.content
@@ -154,12 +152,16 @@ def GeneratePerson():
 
 
     #print("Содержимое файла:", file_content)
-    if st.session_state.debug: st.write(prompt)
+    if st.session_state.debug:
+        st.info("Promt:") 
+        st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
         #st.write(generation_id)
         generated_data = OpenAIChat(prompt)
-        if st.session_state.debug: st.write(generated_data)
+        if st.session_state.debug:
+            st.info("Generated data:")
+            st.write(generated_data)
     
     st.success("Персонажи успешно сгенерированы!")
     
@@ -179,7 +181,9 @@ def AnalyseAD():
         for records in table.iterate(page_size=number_of_persons_analysis, max_records=1000):
             for record in records:
 
-                if st.session_state.debug: st.write(record)
+                if st.session_state.debug:
+                    st.info("Record:")
+                    st.write(record)
                 #st.write(record["fields"]["Name"])
                 description = record["fields"]["Description"]
                 name = record["fields"]["Name"]
@@ -238,11 +242,15 @@ def AnalyseAD():
                     }}
                 }} """
 
-                if st.session_state.debug: st.write(prompt)
+                if st.session_state.debug: 
+                    st.info("Promt:")
+                    st.write(prompt)
                 
                 generated_data = OpenAIChat(prompt)
 
-                if st.session_state.debug: st.write(generated_data)
+                if st.session_state.debug: 
+                    st.info("Generated data:")
+                    st.write(generated_data)
 
                 upload_to_airtable(generated_data, "Responses")
 
