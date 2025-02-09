@@ -19,12 +19,12 @@ education_selected = ["Среднее", "Неоконченное высшее",
 income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 age_range = (18, 60)
 gender_ratio = 50
-model = "deepseek-ai/DeepSeek-V3"
+model_name = "deepseek-ai/DeepSeek-V3"
 
 #функции
 def OpenAIChat(promt):
 
-    if "deepseek" not in model.lower():
+    if "deepseek" not in model_name.lower():
         client = OpenAI(
             api_key=st.secrets.OPENAI_API_KEY,
         )
@@ -34,11 +34,11 @@ def OpenAIChat(promt):
             api_key=st.secrets.NEBIUS_API_KEY,
         )
 
-    st.write(model)
+    st.write(model_name)
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        model,
+        model=model,
         messages=[{"role":"user","content": promt}],
         response_format={"type": "json_object"}
     )
@@ -268,7 +268,7 @@ with col_right:
     #free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
 
     # 5.12 Выберите модель
-    model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
+    model_name = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
                                              "deepseek-ai/DeepSeek-R1",
                                              "meta-llama/Llama-3.3-70B-Instruct",
                                              "gpt-4o",
