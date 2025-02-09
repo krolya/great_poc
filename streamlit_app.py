@@ -46,7 +46,7 @@ def OpenAIChat(promt):
 
     completion = client.chat.completions.create(
         model="gpt-4o",
-        messages=[{"role":"user","content":"WAZZUP!"}],
+        messages=[{"role":"user","content": "Ответь в формате JSON: {\"message\": \"Твой ответ здесь\"}"}],
         response_format={"type": "json_object"}
     )
         #max_tokens=100,
