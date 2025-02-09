@@ -164,7 +164,7 @@ def GeneratePerson():
 def AnalyseAD():
     st.write("Анализ рекламы")
 
-    
+
 # Настройка страницы
 st.set_page_config(page_title="Более нормальный человек", layout="wide")
 st.session_state.debug = False
@@ -314,9 +314,6 @@ with tab2:
             # 5.0. Слайдер для выбора количества персон для генерации
             number_of_persons = st.slider("Количество персон для анализа", min_value=0, max_value=100, value=20)
 
-            if st.button("Анализировать"):
-                st.info("Анализ начался...")
-                AnalyseAD()
 
     with col_right:
         st.header("Анализ рекламы")
@@ -329,6 +326,10 @@ with tab2:
 
         # 5.11. Поле для ввода сообщения для проверки
         free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
+
+        if st.button("Анализировать"):
+            st.info("Анализ начался...")
+            AnalyseAD()
 
 with tab3:
     debug = st.checkbox("Выводить отладочную информацию", value=False, key="debug")
