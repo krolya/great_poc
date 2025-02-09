@@ -64,6 +64,12 @@ def OpenAIChat(promt):
         #    "guided_json": {"type": "object", "properties": {...}}
         #},
    
+    if st.session_state.debug: 
+        st.write(completion)
+        st.write(completion.choices[0])
+        st.write(completion.choices[0].message)
+        st.write(completion.choices[0].message.content)
+
     return completion.choices[0].message.content
 
 def upload_to_airtable(data):
