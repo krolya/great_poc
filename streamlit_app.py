@@ -45,7 +45,7 @@ def OpenAIChat(promt):
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        model=model,
+        "chatgpt-4o-latest",
         
         messages=[
             {
