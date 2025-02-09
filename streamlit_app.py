@@ -4,7 +4,7 @@ import datetime
 
 from openai import OpenAI
 from pyairtable import Api
-from github import Github
+#from github import Github
 
 
 #глобальные переменные
@@ -88,7 +88,7 @@ def upload_to_airtable(data):
 def GeneratePerson():
 
     generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-    prompt2 = f"""
+    prompt = f"""
     Ты специальный сервис по созданию персонажей. Твоя задача сгенерировать JSON-объект с случайными персонажами по следующим правилам:
 
     Количество персонажей: {number_of_persons}
@@ -132,25 +132,26 @@ def GeneratePerson():
     }}
     """
 
+    # GitHub API не работает в Streamlit
     # Подключаемся к GitHub
-    g = Github(st.secrets.GITHUB_API_TOKEN)
+    #g = Github(st.secrets.GITHUB_API_TOKEN)
 
     # Получаем репозиторий
-    repo = g.get_repo("krolya/great_poc")
+    #repo = g.get_repo("krolya/great_poc")
 
     # Получаем файл из репозитория
-    prompt = repo.get_contents("person_generation.promt").decoded_content.decode("utf-8")
+    #prompt = repo.get_contents("person_generation.promt").decoded_content.decode("utf-8")
 
     # Заменяем переменные в шаблоне ОЧЕНЬ ОЧЕНЬ НЕБЕЗОПАСНЫМ способом
-    formatted_prompt = eval(f'f"""{prompt}"""')
+    #formatted_prompt = eval(f'f"""{prompt}"""')
 
 
     print("Содержимое файла:", file_content)
-    if st.session_state.debug: st.write(formatted_prompt)
+    if st.session_state.debug: st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
         #st.write(generation_id)
-        generated_data = OpenAIChat(formatted_prompt)
+        generated_data = OpenAIChat(prompt)
         if st.session_state.debug: st.write(generated_data)
     
     st.success("Персонажи успешно сгенерированы!")
