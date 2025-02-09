@@ -163,7 +163,7 @@ def GeneratePerson():
 
 # Настройка страницы
 st.set_page_config(page_title="Более нормальный человек", layout="wide")
-    
+st.session_state.debug = False
 
 # Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
 #st.markdown("""
