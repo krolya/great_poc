@@ -42,6 +42,8 @@ def OpenAIChat(promt):
     )
 
     st.write(model)
+    st.info("Запускаем чат...")
+
     completion = client.chat.completions.create(
         model=model,
         
