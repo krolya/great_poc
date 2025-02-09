@@ -133,6 +133,8 @@ def GeneratePerson():
 
     """
 
+    st.write(prompt)
+
     with st.spinner("Генерация персонажей..."):
         generated_data = OpenAIChat(prompt)
         st.write(generated_data)
