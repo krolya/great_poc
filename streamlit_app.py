@@ -117,7 +117,7 @@ def GeneratePerson():
             "City size": "Свыше 1 000 000", #случайный размер из списка {city_size_selected}
             "Education": "Среднее", #случайное образование из списка {education_selected}
             "Generation ID": {Generation_id}, #уникальный идентификатор генерации
-            "Generation model": "{model}", #модель генерации
+            "Generation model": "{model_name}", #модель генерации
             "Description": "Здесь нужно дать полное описание персоны с учетом всех параметров выше и расширь его каким-то дополнительным описанием", #полное описание персонажа
         }},
         {{
