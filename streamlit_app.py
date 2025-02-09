@@ -21,7 +21,7 @@ education_selected = ["Среднее", "Неоконченное высшее",
 income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 age_range = (18, 60)
 gender_ratio = 50
-model_name = "deepseek-ai/DeepSeek-V3"
+model_name = "gpt-4o"
 generation_id = ""
 number_of_persons = 20
 number_of_persons_analysis = 20
@@ -199,7 +199,7 @@ def AnalyseAD():
                 children_age_3 = record["fields"]["Children age 3"]
                 children_age_4 = record["fields"]["Children age 4"]
                 children_age_5 = record["fields"]["Children age 5"]
-                record_id = record["fields"]["ID"]
+                record_id = record["id"]
 
 
 
