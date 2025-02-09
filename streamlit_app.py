@@ -80,7 +80,7 @@ def upload_to_airtable(data):
     #    st.write(response.json())
 
     response = table.batch_create(records["records"])
-    if debug: st.write(response)
+    if st.session_state.debug: st.write(response)
     return len(response)
 
 def GeneratePerson():
@@ -130,12 +130,12 @@ def GeneratePerson():
     }}
 
     """
-    if debug: st.write(prompt)
+    if st.session_state.debug: st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
         #st.write(generation_id)
         generated_data = OpenAIChat(prompt)
-        if debug: st.write(generated_data)
+        if st.session_state.debug: st.write(generated_data)
     
     st.success("Персонажи успешно сгенерированы!")
     
@@ -291,6 +291,6 @@ with tab1:
             GeneratePerson()
 
 with tab3:
-    debug = st.checkbox("Выводить отладочную информацию", value=False)
+    debug = st.checkbox("Выводить отладочную информацию", value=False, key="debug")
 
     
