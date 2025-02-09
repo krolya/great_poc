@@ -392,7 +392,7 @@ with tab1:
                                                 "meta-llama/Llama-3.3-70B-Instruct",
                                                 "gpt-4o",
                                                 "o1",
-                                                "o1-mini"])
+                                                "o1-mini"], index=3)
 
         # Например, можно добавить кнопку для запуска генерации
         if st.button("Сгенерировать"):
