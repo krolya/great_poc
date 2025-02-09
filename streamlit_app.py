@@ -22,7 +22,6 @@ income_selected = ["Низкий", "Низкий плюс"," Средний", "�
 age_range = (18, 60)
 gender_ratio = 50
 model_name = "deepseek-ai/DeepSeek-V3"
-debug = False
 generation_id = ""
 
 #функции
