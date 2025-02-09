@@ -43,7 +43,7 @@ def OpenAIChat(promt):
 
     st.write(model)
     completion = client.chat.completions.create(
-        model,
+        model=model,
         
         messages=[
             {
