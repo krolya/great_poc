@@ -37,7 +37,7 @@ def OpenAIChat(promt):
     #    )
 
     client = OpenAI(
-        base_url="https://api.openai.com/v1/chat/completions",
+        #base_url="https://api.openai.com/v1/chat/completions",
         api_key=st.secrets.OPENAI_API_KEY,
     )
 
