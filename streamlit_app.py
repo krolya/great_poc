@@ -34,8 +34,8 @@ def OpenAIChat(promt):
             api_key=st.secrets.NEBIUS_API_KEY,
         )
 
-    st.write(model_name)
-    st.info("Запускаем чат...")
+    #st.write(model_name)
+    #st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
         model=model_name,
@@ -67,6 +67,8 @@ def upload_to_airtable(data):
     table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
     
     #records = [{"fields": person} for person in data["records"]]]
+    st.info("Загружаем данные в Airtable...")
+    st.write(data)
     records = json.loads(data)
     #st.write(records)
     #st.write(len(records))
@@ -130,7 +132,7 @@ def GeneratePerson():
     st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
-        st.write(generation_id)
+        #st.write(generation_id)
         generated_data = OpenAIChat(prompt)
         st.write(generated_data)
     
