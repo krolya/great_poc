@@ -23,6 +23,8 @@ age_range = (18, 60)
 gender_ratio = 50
 model_name = "deepseek-ai/DeepSeek-V3"
 generation_id = ""
+number_of_persons = 20
+number_of_persons_analysis = 20
 
 #функции
 def OpenAIChat(promt):
@@ -71,9 +73,9 @@ def OpenAIChat(promt):
 
     return completion.choices[0].message.content
 
-def upload_to_airtable(data):
+def upload_to_airtable(data, table_name="Personas"):
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
-    table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
+    table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
     
     #records = [{"fields": person} for person in data["records"]]]
     st.info("Загружаем данные в Airtable...")
@@ -168,9 +170,68 @@ def GeneratePerson():
 
 def AnalyseAD():
     st.write("Анализ рекламы")
+    response_test_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
 
-#def toggle_checkbox():
-#    st.session_state.debug = not st.session_state.debug
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
+
+    with st.spinner("Генерация ответов..."):
+        for records in table.iterate(page_size=number_of_persons_analysis, max_records=1000):
+            for record in records:
+
+                if st.session_state.debug: st.write(record)
+                #st.write(record["fields"]["Name"])
+
+                prompt = f"""
+                Представь себе, что ты {record.fields.Description}, тебя зовут {record.fields.Name} и тебе {record.fields.Age} лет, 
+                ты живешь в {record.fields.Region} в городе с населением {record.fields.City size}, у тебя {record.fields.Children} детей, 
+                твой доход {record.fields.Income}, ты {record.fields.Marital status}, твое образование {record.fields.Education}.
+
+                Внимательно прочитай описание рекламы, которое дано ниже:
+                    {ad_description} 
+                    
+                После этого ответь следующие вопросы (если вопроса нет, то просто пропускаем его):
+                1. Насколько понятна вам реклама?
+                2. Насколько вам нравится данная реклама?
+                3. Насколько вы доверяете данной рекламе?
+                4. Насколько данная реклама отличается от рекламы конкурентов?
+                5. Насколько доносится следующее сообщение {message}?
+                6. {free_question}
+
+                Верни структурированный JSON с твоими ответами в формате и только его без каких либо пояснений или чего-либо еще в ответе по следующему шаблону, напротив каждой строки будет дано пояснение после знака#:
+
+                {{
+                    "records":[ #эта строка будет всегда присутствовать, независимости от количества ответов
+                    {{
+                        "Persona": {record.fields.ID}, #ID персоны, которая отвечает на вопросы
+                        "Response test ID": "{response_test_id}", #уникальный идентификатор теста
+                        "Response clarity score": 0, #оценка понятности рекламы от 0 до 100, где 0 реклама вообще не понятна, 100 - понятна на 100%
+                        "Response clarity description": "Текст комментария", #комментарий к оценке понятности
+                        "Response likeability score": 0, #оценка нравится ли реклама, от 0 до 100, где 0 - не нравится, 100 - нравится
+                        "Response likeability description": "Текст комментария", #комментарий к оценке нравится ли реклама
+                        "Response trust score": 0, #оценка доверия к рекламе, от 0 до 100, где 0 - не доверяю, 100 - доверяю
+                        "Response trust description": "Текст комментария", #комментарий к оценке доверия к рекламе
+                        "Response diversity score": 0, #оценка отличия от конкурентов, от 0 до 100, где 0 - не отличается, 100 - отличается
+                        "Response diversity description": "Текст комментария", #комментарий к оценке отличия от конкурентов
+                        "Response message score": 0, #оценка доносится ли сообщение, от 0 до 100, где 0 - не доносится, 100 - доносится
+                        "Response message description": "Текст комментария", #комментарий к оценке доносится ли сообщение
+                        "Response free question 1": "Текст ответа", #ответ на свободный вопрос
+                        "Response description": "Свободный комментарий в целом на рекламу", #здесь нужно подытожить в целом впечатление от рекламы и ответы на вопросы, комментарий должен совпадать с оценками
+                    }}
+                }} """
+
+                if st.session_state.debug: st.write(prompt)
+                
+                generated_data = OpenAIChat(prompt)
+
+                if st.session_state.debug: st.write(generated_data)
+
+                upload_to_airtable(generated_data, "Responses")
+
+    st.success("Анализ успешно завершен!")
+     
+
+
 
 # Настройка страницы
 st.set_page_config(page_title="Более нормальный человек", layout="wide")
@@ -320,7 +381,7 @@ with tab2:
         with st.expander("Основные настройки", expanded=True):
 
             # 5.0. Слайдер для выбора количества персон для генерации
-            number_of_persons = st.slider("Количество персон для анализа", min_value=0, max_value=100, value=20)
+            number_of_persons_analysis = st.slider("Количество персон для анализа", min_value=0, max_value=100, value=20)
 
 
     with col_right:
