@@ -20,7 +20,7 @@ income_selected = ["Низкий", "Низкий плюс"," Средний", "�
 age_range = (18, 60)
 gender_ratio = 50
 #model = "deepseek-ai/DeepSeek-V3"
-model = "chatgpt-4o-latest"
+model = "chatgpt-4o-latest" 
 
 #функции
 def OpenAIChat(promt):
