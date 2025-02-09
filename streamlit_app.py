@@ -181,20 +181,21 @@ def AnalyseAD():
 
                 if st.session_state.debug: st.write(record)
                 #st.write(record["fields"]["Name"])
-                description = record.fields["Description"]
-                name = record.fields["Name"]
-                age = record.fields["Age"]
-                region = record.fields["Region"]
-                city_size = record.fields["City size"]
-                children = record.fields["Children"]
-                income = record.fields["Income"]
-                marital_status = record.fields["Marital status"]
-                education = record.fields["Education"]
-                children_age_1 = record.fields["Children age 1"]
-                children_age_2 = record.fields["Children age 2"]
-                children_age_3 = record.fields["Children age 3"]
-                children_age_4 = record.fields["Children age 4"]
-                children_age_5 = record.fields["Children age 5"]
+                description = record["fields"]["Description"]
+                name = record["fields"]["Name"]
+                age = record["fields"]["Age"]
+                region = record["fields"]["Region"]
+                city_size = record["fields"]["City size"]
+                children = record["fields"]["Children"]
+                income = record["fields"]["Income"]
+                marital_status = record["fields"]["Marital status"]
+                education = record["fields"]["Education"]
+                children_age_1 = record["fields"]["Children age 1"]
+                children_age_2 = record["fields"]["Children age 2"]
+                children_age_3 = record["fields"]["Children age 3"]
+                children_age_4 = record["fields"]["Children age 4"]
+                children_age_5 = record["fields"]["Children age 5"]
+                record_id = record["fields"]["ID"]
 
 
 
@@ -220,7 +221,7 @@ def AnalyseAD():
                 {{
                     "records":[ #эта строка будет всегда присутствовать, независимости от количества ответов
                     {{
-                        "Persona": {record.fields.ID}, #ID персоны, которая отвечает на вопросы
+                        "Persona": {record_id}, #ID персоны, которая отвечает на вопросы
                         "Response test ID": "{response_test_id}", #уникальный идентификатор теста
                         "Response clarity score": 0, #оценка понятности рекламы от 0 до 100, где 0 реклама вообще не понятна, 100 - понятна на 100%
                         "Response clarity description": "Текст комментария", #комментарий к оценке понятности
