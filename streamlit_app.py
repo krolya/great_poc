@@ -20,7 +20,7 @@ income_selected = ["Низкий", "Низкий плюс"," Средний", "�
 age_range = (18, 60)
 gender_ratio = 50
 #model = "deepseek-ai/DeepSeek-V3"
-model = "chatgpt-4o-latest" 
+model = "gpt-4o" 
 
 #функции
 def OpenAIChat(promt):
@@ -45,7 +45,7 @@ def OpenAIChat(promt):
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        model="chatgpt-4o-latest",
+        model="gpt-4o",
         messages=[{"role":"user","content":"WAZZUP!"}],
         response_format={"type": "json_object"}
     )
