@@ -87,7 +87,7 @@ def upload_to_airtable(data):
 
 def GeneratePerson():
 
-    response_test_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    Generation_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     prompt = f"""
     Ты специальный сервис по созданию персонажей. Твоя задача сгенерировать JSON-объект с случайными персонажами по следующим правилам:
 
@@ -122,6 +122,8 @@ def GeneratePerson():
             "Region": "Москва", #случайный регион из списка {selected_regions}
             "City size": "Свыше 1 000 000", #случайный размер из списка {city_size_selected}
             "Education": "Среднее", #случайное образование из списка {education_selected}
+            "Generation ID": {Generation_id}, #уникальный идентификатор генерации
+            "Generation model": "{model}", #модель генерации
             "Description": "Здесь нужно дать полное описание персоны с учетом всех параметров выше и расширь его каким-то дополнительным описанием", #полное описание персонажа
         }},
         {{
@@ -269,12 +271,12 @@ with col_right:
     #free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
 
     # 5.12 Выберите модель
-    #model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
-    #                                         "deepseek-ai/DeepSeek-R1",
-    #                                         "meta-llama/Llama-3.3-70B-Instruct",
-    #                                         "chatgpt-4o-latest",
-    #                                         "o1",
-    #                                         "o1-mini"])
+    model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
+                                             "deepseek-ai/DeepSeek-R1",
+                                             "meta-llama/Llama-3.3-70B-Instruct",
+                                             "chatgpt-4o-latest",
+                                             "o1",
+                                             "o1-mini"])
 
     # Например, можно добавить кнопку для запуска генерации
     if st.button("Сгенерировать"):
