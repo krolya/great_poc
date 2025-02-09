@@ -83,7 +83,7 @@ def upload_to_airtable(data):
 
 def GeneratePerson():
 
-    generation_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
     prompt = f"""
     Ты специальный сервис по созданию персонажей. Твоя задача сгенерировать JSON-объект с случайными персонажами по следующим правилам:
 
