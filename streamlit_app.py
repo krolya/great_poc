@@ -19,7 +19,8 @@ education_selected = ["Среднее", "Неоконченное высшее",
 income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 age_range = (18, 60)
 gender_ratio = 50
-model = "deepseek-ai/DeepSeek-V3"
+#model = "deepseek-ai/DeepSeek-V3"
+model = "chatgpt-4o-latest"
 
 #функции
 def OpenAIChat(promt):
@@ -36,9 +37,10 @@ def OpenAIChat(promt):
     #    )
 
     client = OpenAI(
-            base_url="https://api.studio.nebius.ai/v1/",
-            api_key=st.secrets.NEBIUS_API_KEY,
-        )
+        base_url="https://api.openai.com/v1/chat/completions",
+        api_key=st.secrets.OPENAI_API_KEY,
+    )
+
     st.write(model)
     completion = client.chat.completions.create(
         model,
