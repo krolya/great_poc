@@ -141,12 +141,16 @@ def GeneratePerson():
     # Получаем файл из репозитория
     prompt = repo.get_contents("person_generation.promt").decoded_content.decode("utf-8")
 
+    # Заменяем переменные в шаблоне ОЧЕНЬ ОЧЕНЬ НЕБЕЗОПАСНЫМ способом
+    formatted_prompt = eval(f'f"""{prompt}"""')
+
+
     print("Содержимое файла:", file_content)
-    if st.session_state.debug: st.write(prompt)
+    if st.session_state.debug: st.write(formatted_prompt)
 
     with st.spinner("Генерация персонажей..."):
         #st.write(generation_id)
-        generated_data = OpenAIChat(prompt)
+        generated_data = OpenAIChat(formatted_prompt)
         if st.session_state.debug: st.write(generated_data)
     
     st.success("Персонажи успешно сгенерированы!")
