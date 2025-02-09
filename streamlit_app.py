@@ -38,7 +38,7 @@ def OpenAIChat(promt):
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        model=model,
+        model=model_name,
         messages=[{"role":"user","content": promt}],
         response_format={"type": "json_object"}
     )
