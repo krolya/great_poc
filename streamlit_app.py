@@ -184,8 +184,8 @@ def AnalyseAD():
 
                 prompt = f"""
                 Представь себе, что ты {record.fields.Description}, тебя зовут {record.fields.Name} и тебе {record.fields.Age} лет, 
-                ты живешь в {record.fields.Region} в городе с населением {record.fields.City size}, у тебя {record.fields.Children} детей, 
-                твой доход {record.fields.Income}, ты {record.fields.Marital status}, твое образование {record.fields.Education}.
+                ты живешь в {record.fields.Region}, в городе с населением {record.fields.City size}, у тебя {record.fields.Children} детей, 
+                твой доход {record.fields.Income}, ты {record.fields["Marital status"]}, твое образование {record.fields.Education}.
 
                 Внимательно прочитай описание рекламы, которое дано ниже:
                     {ad_description} 
