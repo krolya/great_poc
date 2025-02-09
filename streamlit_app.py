@@ -21,6 +21,7 @@ age_range = (18, 60)
 gender_ratio = 50
 model_name = "deepseek-ai/DeepSeek-V3"
 debug = False
+generation_id = ""
 
 #функции
 def OpenAIChat(promt):
@@ -119,7 +120,7 @@ def GeneratePerson():
             "Region": "Москва", #случайный регион из списка {selected_regions}
             "City size": "Свыше 1 000 000", #случайный размер из списка {city_size_selected}
             "Education": "Среднее", #случайное образование из списка {education_selected}
-            "Generation ID": {generation_id}, #уникальный идентификатор генерации
+            "Generation ID": "{generation_id}", #уникальный идентификатор генерации
             "Generation model": "{model_name}", #модель генерации
             "Description": "Здесь нужно дать полное описание персоны с учетом всех параметров выше и расширь его каким-то дополнительным описанием", #полное описание персонажа
         }},
@@ -162,127 +163,134 @@ st.set_page_config(page_title="Более нормальный человек", 
 # Верхняя часть — заголовок
 #st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
 
-# Разбиваем остальную область на две колонки с пропорцией 30:70
-col_left, col_right = st.columns([3, 7])
+# Создаем три вкладки
+tab1, tab2, tab3 = st.tabs(["Генерация персон", "Аналитика", "Настройки"])
 
-# Левая колонка: "Целевая аудитория" и фильтры
-with col_left:
-    st.header("Целевая аудитория")
+with tab1:
 
-    with st.expander("Основные настройки", expanded=True):
+    # 1. Заголовок
+    # Разбиваем остальную область на две колонки с пропорцией 30:70
+    col_left, col_right = st.columns([3, 7])
 
-        # 5.0. Слайдер для выбора количества персон для генерации
-        number_of_persons = st.slider("Количество персон для генерации", min_value=0, max_value=100, value=20)
+    # Левая колонка: "Целевая аудитория" и фильтры
+    with col_left:
+        st.header("Целевая аудитория")
 
-        # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
-        gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
+        with st.expander("Основные настройки", expanded=True):
 
-        # 5.2. Двойной слайдер для выбора диапазона возраста
-        age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
+            # 5.0. Слайдер для выбора количества персон для генерации
+            number_of_persons = st.slider("Количество персон для генерации", min_value=0, max_value=100, value=20)
 
-        # 5.3. Доход
-        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-        income_selected = st.multiselect("Выберите группу доходов", options=income_options,
-                                            default=income_options)
+            # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
+            gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
 
-    # 5.3. Фильтр «Образование»
-    with st.expander("Образование", expanded=True):
-        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
-        education_selected = st.multiselect("Выберите образование", options=education_options,
-                                            default=education_options)
+            # 5.2. Двойной слайдер для выбора диапазона возраста
+            age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
 
-    # 5.4. Фильтр «Регион проживания»
-    all_regions = [
-        "Москва",
-        "Московская область",
-        "Санкт-Петербург",
-        "Новосибирская область",
-        "Свердловская область",
-        "Краснодарский край",
-        "Республика Татарстан",
-        "Челябинская область",
-        "Самарская область",
-        "Оренбургская область"
-    ]
-    with st.expander("Регион проживания", expanded=True):
-        # Кнопки для выбора/снятия всех флажков
-        col_btn1, col_btn2 = st.columns(2)
-        if col_btn1.button("Выбрать все", key="select_all_regions"):
-            for region in all_regions:
-                st.session_state[f"region_{region}"] = True
-        if col_btn2.button("Снять все", key="deselect_all_regions"):
-            for region in all_regions:
-                st.session_state[f"region_{region}"] = False
+            # 5.3. Доход
+            income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+            income_selected = st.multiselect("Выберите группу доходов", options=income_options,
+                                                default=income_options)
 
-        selected_regions = []
-        for region in all_regions:
-            # По умолчанию Москва и Московская область включены
-            default = True if region in ["Москва", "Московская область"] else False
-            checked = st.checkbox(
-                region,
-                value=st.session_state.get(f"region_{region}", default),
-                key=f"region_{region}"
-            )
-            if checked:
-                selected_regions.append(region)
+        # 5.3. Фильтр «Образование»
+        with st.expander("Образование", expanded=True):
+            education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
+            education_selected = st.multiselect("Выберите образование", options=education_options,
+                                                default=education_options)
 
-        # 5.5. Фильтр «Размер населенного пункта»
-        st.markdown("#### Размер населенного пункта")
-        city_size_options = [
-            "До 100 0000 человек",
-            "От 100 000 до 500 000",
-            "От 500 000 до 1 000 000",
-            "Свыше 1 000 000"
+        # 5.4. Фильтр «Регион проживания»
+        all_regions = [
+            "Москва",
+            "Московская область",
+            "Санкт-Петербург",
+            "Новосибирская область",
+            "Свердловская область",
+            "Краснодарский край",
+            "Республика Татарстан",
+            "Челябинская область",
+            "Самарская область",
+            "Оренбургская область"
         ]
-        city_size_selected = st.multiselect("Выберите размер населенного пункта", options=city_size_options,
-                                            default=city_size_options)
+        with st.expander("Регион проживания", expanded=True):
+            # Кнопки для выбора/снятия всех флажков
+            col_btn1, col_btn2 = st.columns(2)
+            if col_btn1.button("Выбрать все", key="select_all_regions"):
+                for region in all_regions:
+                    st.session_state[f"region_{region}"] = True
+            if col_btn2.button("Снять все", key="deselect_all_regions"):
+                for region in all_regions:
+                    st.session_state[f"region_{region}"] = False
 
-    with st.expander("Семейное положение", expanded=True):
+            selected_regions = []
+            for region in all_regions:
+                # По умолчанию Москва и Московская область включены
+                default = True if region in ["Москва", "Московская область"] else False
+                checked = st.checkbox(
+                    region,
+                    value=st.session_state.get(f"region_{region}", default),
+                    key=f"region_{region}"
+                )
+                if checked:
+                    selected_regions.append(region)
 
-        # 5.8. Фильтр «Семейное положение»
-        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
-        marital_selected = st.multiselect("Выберите семейное положение", options=marital_options,
-                                        default=marital_options)
-        # 5.6. Двойной слайдер для выбора диапазона количества детей
-        children_count = st.slider("Количество детей", min_value=0, max_value=5, value=(0, 3))
+            # 5.5. Фильтр «Размер населенного пункта»
+            st.markdown("#### Размер населенного пункта")
+            city_size_options = [
+                "До 100 0000 человек",
+                "От 100 000 до 500 000",
+                "От 500 000 до 1 000 000",
+                "Свыше 1 000 000"
+            ]
+            city_size_selected = st.multiselect("Выберите размер населенного пункта", options=city_size_options,
+                                                default=city_size_options)
 
-        # 5.7. Двойной слайдер для выбора диапазона возраста детей
-        children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
-  
+        with st.expander("Семейное положение", expanded=True):
+
+            # 5.8. Фильтр «Семейное положение»
+            marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
+            marital_selected = st.multiselect("Выберите семейное положение", options=marital_options,
+                                            default=marital_options)
+            # 5.6. Двойной слайдер для выбора диапазона количества детей
+            children_count = st.slider("Количество детей", min_value=0, max_value=5, value=(0, 3))
+
+            # 5.7. Двойной слайдер для выбора диапазона возраста детей
+            children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
     
-    # 5.9. Поле для ввода тэгов
-    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
+        
+        # 5.9. Поле для ввода тэгов
+        tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
 
+        
+
+    # Правая колонка: "Генерация"
+    with col_right:
+        st.header("Генерация персон")
+
+        #st.write("Здесь можно разместить настройки генерации или результаты.")
+
+        # 5.10. Поле для ввода сообщения для проверки
+        #ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
+
+        # 5.10. Поле для ввода сообщения для проверки
+        #message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
+
+        # 5.11. Поле для ввода сообщения для проверки
+        #free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
+
+        # 5.12 Выберите модель
+        model_name = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
+                                                "deepseek-ai/DeepSeek-R1",
+                                                "meta-llama/Llama-3.3-70B-Instruct",
+                                                "gpt-4o",
+                                                "o1",
+                                                "o1-mini"])
+
+        # Например, можно добавить кнопку для запуска генерации
+        if st.button("Сгенерировать"):
+            st.info("Генерация началась...")
+            GeneratePerson()
+
+with tab3:
     debug = st.checkbox("Выводить отладочную информацию", value=False)
-    
 
-# Правая колонка: "Генерация"
-with col_right:
-    st.header("Генерация персон")
-
-    #st.write("Здесь можно разместить настройки генерации или результаты.")
-
-    # 5.10. Поле для ввода сообщения для проверки
-    #ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
-
-    # 5.10. Поле для ввода сообщения для проверки
-    #message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
-
-    # 5.11. Поле для ввода сообщения для проверки
-    #free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
-
-    # 5.12 Выберите модель
-    model_name = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
-                                             "deepseek-ai/DeepSeek-R1",
-                                             "meta-llama/Llama-3.3-70B-Instruct",
-                                             "gpt-4o",
-                                             "o1",
-                                             "o1-mini"])
-
-    # Например, можно добавить кнопку для запуска генерации
-    if st.button("Сгенерировать"):
-        st.info("Генерация началась...")
-        GeneratePerson()
-    
-    
     
