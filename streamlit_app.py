@@ -24,17 +24,21 @@ model = "deepseek-ai/DeepSeek-V3"
 #функции
 def OpenAIChat(promt):
 
-    if model.find("/")==-1:
-        client = OpenAI(
-            base_url="https://api.openai.com/v1/chat/completions",
-            api_key=st.secrets.OPENAI_API_KEY,
-        )
-    else:
-        client = OpenAI(
+    #if model.find("/")==-1:
+    #    client = OpenAI(
+    #        base_url="https://api.openai.com/v1/chat/completions",
+    #        api_key=st.secrets.OPENAI_API_KEY,
+    #    )
+    #else:
+    #    client = OpenAI(
+    #        base_url="https://api.studio.nebius.ai/v1/",
+    #        api_key=st.secrets.NEBIUS_API_KEY,
+    #    )
+
+    client = OpenAI(
             base_url="https://api.studio.nebius.ai/v1/",
             api_key=st.secrets.NEBIUS_API_KEY,
         )
-
     st.write(model)
     completion = client.chat.completions.create(
         model,
