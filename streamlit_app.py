@@ -23,10 +23,17 @@ model = "deepseek-ai/DeepSeek-V3"
 
 #функции
 def OpenAIChat(promt):
-    client = OpenAI(
-        base_url="https://api.studio.nebius.ai/v1/",
-        api_key=st.secrets.NEBIUS_API_KEY,
-    )
+
+    if model.find("/")==-1:
+        client = OpenAI(
+            base_url="https://api.openai.com/v1/chat/completions",
+            api_key=st.secrets.OPENAI_API_KEY,
+        )
+    elif
+        client = OpenAI(
+            base_url="https://api.studio.nebius.ai/v1/",
+            api_key=st.secrets.NEBIUS_API_KEY,
+        )
 
     completion = client.chat.completions.create(
         model,
@@ -289,7 +296,12 @@ with col_right:
     free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
 
     # 5.12 Выберите модель
-    model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1", "meta-llama/Llama-3.3-70B-Instruct"])
+    model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
+                                             "deepseek-ai/DeepSeek-R1",
+                                             "meta-llama/Llama-3.3-70B-Instruct",
+                                             "chatgpt-4o-latest",
+                                             "o1",
+                                             "o1-mini"])
 
     # Например, можно добавить кнопку для запуска генерации
     if st.button("Сгенерировать"):
