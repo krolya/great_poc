@@ -169,8 +169,8 @@ def GeneratePerson():
 def AnalyseAD():
     st.write("Анализ рекламы")
 
-def toggle_checkbox():
-    st.session_state.debug = not st.session_state.debug
+#def toggle_checkbox():
+#    st.session_state.debug = not st.session_state.debug
 
 # Настройка страницы
 st.set_page_config(page_title="Более нормальный человек", layout="wide")
@@ -340,6 +340,6 @@ with tab2:
             AnalyseAD()
 
 with tab3:
-    st.checkbox("Выводить отладочную информацию", key="debug",on_change=toggle_checkbox)
+    st.checkbox("Выводить отладочную информацию", key="debug")
 
     
