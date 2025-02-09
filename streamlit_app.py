@@ -45,14 +45,10 @@ def OpenAIChat(promt):
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        "chatgpt-4o-latest",
-        
-        messages=[
-            {
-            "role": "user",
-            "content": promt
-            }
-        ],
+        model="gpt-4o",
+        messages=[{"role":"user","content":"WAZZUP!"}],
+        response_format={"type": "json_object"}
+    )
         #max_tokens=100,
         #temperature=1,
         #top_p=1,
@@ -70,11 +66,7 @@ def OpenAIChat(promt):
         #extra_body={
         #    "guided_json": {"type": "object", "properties": {...}}
         #},
-        response_format={
-            "type": "json_object"
-        }
-    )
-    
+   
     return completion.choices[0].message.content
 
 def upload_to_airtable(data):
