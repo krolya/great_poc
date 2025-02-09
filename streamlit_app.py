@@ -4,6 +4,8 @@ import datetime
 
 from openai import OpenAI
 from pyairtable import Api
+from github import Github
+
 
 #глобальные переменные
 ad_description = ""
@@ -86,7 +88,7 @@ def upload_to_airtable(data):
 def GeneratePerson():
 
     generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-    prompt = f"""
+    prompt2 = f"""
     Ты специальный сервис по созданию персонажей. Твоя задача сгенерировать JSON-объект с случайными персонажами по следующим правилам:
 
     Количество персонажей: {number_of_persons}
@@ -128,8 +130,18 @@ def GeneratePerson():
         #описание следующего персонажа, может быть сколько угодно пока не равно количеству персонажей
         }}
     }}
-
     """
+
+    # Подключаемся к GitHub
+    g = Github(st.secrets.GITHUB_API_TOKEN)
+
+    # Получаем репозиторий
+    repo = g.get_repo("krolya/great_poc")
+
+    # Получаем файл из репозитория
+    prompt = repo.get_contents("person_generation.promt").decoded_content.decode("utf-8")
+
+    print("Содержимое файла:", file_content)
     if st.session_state.debug: st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
@@ -268,14 +280,7 @@ with tab1:
 
         #st.write("Здесь можно разместить настройки генерации или результаты.")
 
-        # 5.10. Поле для ввода сообщения для проверки
-        #ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
-
-        # 5.10. Поле для ввода сообщения для проверки
-        #message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
-
-        # 5.11. Поле для ввода сообщения для проверки
-        #free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
+        
 
         # 5.12 Выберите модель
         model_name = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
@@ -289,6 +294,32 @@ with tab1:
         if st.button("Сгенерировать"):
             st.info("Генерация началась...")
             GeneratePerson()
+
+with tab2:
+    col_left, col_right = st.columns([3, 7])
+    with col_left:
+        st.header("Фильтры")
+
+        with st.expander("Основные настройки", expanded=True):
+
+            # 5.0. Слайдер для выбора количества персон для генерации
+            number_of_persons = st.slider("Количество персон для анализа", min_value=0, max_value=100, value=20)
+
+            if st.button("Сгенерировать"):
+                st.info("Генерация началась...")
+                GeneratePerson()
+
+    with col_right:
+        st.header("Анализ рекламы")
+
+        # 5.10. Поле для ввода сообщения для проверки
+        ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
+
+        # 5.10. Поле для ввода сообщения для проверки
+        message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
+
+        # 5.11. Поле для ввода сообщения для проверки
+        free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
 
 with tab3:
     debug = st.checkbox("Выводить отладочную информацию", value=False, key="debug")
