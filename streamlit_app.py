@@ -19,34 +19,27 @@ education_selected = ["Среднее", "Неоконченное высшее",
 income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 age_range = (18, 60)
 gender_ratio = 50
-#model = "deepseek-ai/DeepSeek-V3"
-model = "gpt-4o" 
+model = "deepseek-ai/DeepSeek-V3"
 
 #функции
 def OpenAIChat(promt):
 
-    #if model.find("/")==-1:
-    #    client = OpenAI(
-    #        base_url="https://api.openai.com/v1/chat/completions",
-    #        api_key=st.secrets.OPENAI_API_KEY,
-    #    )
-    #else:
-    #    client = OpenAI(
-    #        base_url="https://api.studio.nebius.ai/v1/",
-    #        api_key=st.secrets.NEBIUS_API_KEY,
-    #    )
-
-    client = OpenAI(
-        #base_url="https://api.openai.com/v1/chat/completions",
-        api_key=st.secrets.OPENAI_API_KEY,
-    )
+    if model.find("/")==-1:
+        client = OpenAI(
+            api_key=st.secrets.OPENAI_API_KEY,
+        )
+    else:
+        client = OpenAI(
+            base_url="https://api.studio.nebius.ai/v1/",
+            api_key=st.secrets.NEBIUS_API_KEY,
+        )
 
     st.write(model)
     st.info("Запускаем чат...")
 
     completion = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role":"user","content": "Ответь в формате JSON: {\"message\": \"Твой ответ здесь\"}"}],
+        model,
+        messages=[{"role":"user","content": promt}],
         response_format={"type": "json_object"}
     )
         #max_tokens=100,
@@ -278,7 +271,7 @@ with col_right:
     model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
                                              "deepseek-ai/DeepSeek-R1",
                                              "meta-llama/Llama-3.3-70B-Instruct",
-                                             "chatgpt-4o-latest",
+                                             "gpt-4o",
                                              "o1",
                                              "o1-mini"])
 
