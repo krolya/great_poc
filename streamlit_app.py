@@ -161,6 +161,10 @@ def GeneratePerson():
     
     st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
 
+def AnalyseAD():
+    st.write("Анализ рекламы")
+
+    
 # Настройка страницы
 st.set_page_config(page_title="Более нормальный человек", layout="wide")
 st.session_state.debug = False
@@ -310,9 +314,9 @@ with tab2:
             # 5.0. Слайдер для выбора количества персон для генерации
             number_of_persons = st.slider("Количество персон для анализа", min_value=0, max_value=100, value=20)
 
-            if st.button("Сгенерировать"):
-                st.info("Генерация началась...")
-                GeneratePerson()
+            if st.button("Анализировать"):
+                st.info("Анализ начался...")
+                AnalyseAD()
 
     with col_right:
         st.header("Анализ рекламы")
