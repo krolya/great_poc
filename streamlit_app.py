@@ -146,7 +146,7 @@ def GeneratePerson():
     #formatted_prompt = eval(f'f"""{prompt}"""')
 
 
-    print("Содержимое файла:", file_content)
+    #print("Содержимое файла:", file_content)
     if st.session_state.debug: st.write(prompt)
 
     with st.spinner("Генерация персонажей..."):
