@@ -81,7 +81,7 @@ def upload_to_airtable(data):
 
 def GeneratePerson():
 
-    Generation_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    generation_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     prompt = f"""
     Ты специальный сервис по созданию персонажей. Твоя задача сгенерировать JSON-объект с случайными персонажами по следующим правилам:
 
@@ -116,7 +116,7 @@ def GeneratePerson():
             "Region": "Москва", #случайный регион из списка {selected_regions}
             "City size": "Свыше 1 000 000", #случайный размер из списка {city_size_selected}
             "Education": "Среднее", #случайное образование из списка {education_selected}
-            "Generation ID": {Generation_id}, #уникальный идентификатор генерации
+            "Generation ID": {generation_id}, #уникальный идентификатор генерации
             "Generation model": "{model_name}", #модель генерации
             "Description": "Здесь нужно дать полное описание персоны с учетом всех параметров выше и расширь его каким-то дополнительным описанием", #полное описание персонажа
         }},
