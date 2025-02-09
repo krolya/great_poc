@@ -24,7 +24,7 @@ model = "deepseek-ai/DeepSeek-V3"
 #функции
 def OpenAIChat(promt):
 
-    if model.find("/")==-1:
+    if model.find("deepseek")==-1:
         client = OpenAI(
             api_key=st.secrets.OPENAI_API_KEY,
         )
