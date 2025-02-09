@@ -19,6 +19,7 @@ education_selected = ["Среднее", "Неоконченное высшее",
 income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 age_range = (18, 60)
 gender_ratio = 50
+model = "deepseek-ai/DeepSeek-V3"
 
 #функции
 def OpenAIChat(promt):
@@ -28,7 +29,7 @@ def OpenAIChat(promt):
     )
 
     completion = client.chat.completions.create(
-        model="deepseek-ai/DeepSeek-V3",
+        model,
         
         messages=[
             {
@@ -144,9 +145,9 @@ def GeneratePerson():
 
         }},
         {{
-        #следующий персонаж
+        #описание следующего персонажа, может быть сколько угодно пока не равно количеству персонажей
         }}
-   }}
+    }}
 
     """
 
@@ -287,6 +288,8 @@ with col_right:
     # 5.11. Поле для ввода сообщения для проверки
     free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
 
+    # 5.12 Выберите модель
+    model = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1", "meta-llama/Llama-3.3-70B-Instruct"])
 
     # Например, можно добавить кнопку для запуска генерации
     if st.button("Сгенерировать"):
