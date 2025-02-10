@@ -382,14 +382,44 @@ def show_response_analysis_tab():
                 person_records = person_table.all(formula=OR(*[EQ(Field("ID"), pid) for pid in person_ids]))
 
                 response_data = [
-                    {"ID": r.get("id", ""), "Ad name": r["fields"].get("Ad name", ""), "Response": r["fields"].get("Response", "")}
+                    {
+                        "ID": r.get("id", ""),
+                        "Ad name": r["fields"].get("Ad name", ""),
+                        "Response": r["fields"].get("Response", ""),
+                        "Response clarity score": r["fields"].get("Response clarity score", 0),
+                        "Response clarity description": r["fields"].get("Response clarity description", ""),
+                        "Response likeability score": r["fields"].get("Response likeability score", 0),
+                        "Response likeability description": r["fields"].get("Response likeability description", ""),
+                        "Response trust score": r["fields"].get("Response trust score", 0),
+                        "Response trust description": r["fields"].get("Response trust description", ""),
+                        "Response diversity score": r["fields"].get("Response diversity score", 0),
+                        "Response diversity description": r["fields"].get("Response diversity description", ""),
+                        "Response message score": r["fields"].get("Response message score", 0),
+                        "Response message description": r["fields"].get("Response message description", ""),
+                        "Response free question 1": r["fields"].get("Response free question 1", ""),
+                        "Response description": r["fields"].get("Response description", "")
+                    }
                     for r in response_records
                 ]
                 st.write("Полная таблица ответов (Responses):")
                 st.dataframe(response_data)
 
                 person_data = [
-                    {"ID": p.get("id", ""), "Name": p["fields"].get("Name", ""), "Age": p["fields"].get("Age", "")}
+                    {
+                        "ID": p.get("id", ""),
+                        "Name": p["fields"].get("Name", ""),
+                        "Gender": p["fields"].get("Gender", ""),
+                        "Marital status": p["fields"].get("Marital status", ""),
+                        "Income": p["fields"].get("Income", ""),
+                        "Age": p["fields"].get("Age", ""),
+                        "Children": p["fields"].get("Children", 0),
+                        "Region": p["fields"].get("Region", ""),
+                        "City size": p["fields"].get("City size", ""),
+                        "Education": p["fields"].get("Education", ""),
+                        "Generation ID": p["fields"].get("Generation ID", ""),
+                        "Generation model": p["fields"].get("Generation model", ""),
+                        "Description": p["fields"].get("Description", "")
+                    }
                     for p in person_records
                 ]
                 st.write("Полная таблица персон (Personas), давших ответы:")
