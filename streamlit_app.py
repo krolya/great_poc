@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import datetime
 import requests
+import itertools
 
 from openai import OpenAI
 from pyairtable import Api
