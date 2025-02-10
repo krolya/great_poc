@@ -1,20 +1,25 @@
+"""
+Расширенный код с комментариями и подгрузкой промтов из GitHub репозитория.
+Теперь чтение данных из Airtable вынесено в отдельную функцию.
+"""
+
 import streamlit as st
 import json
 import datetime
+import requests  # добавляем requests для работы с GitHub Raw
 
 from openai import OpenAI
 from pyairtable import Api
-#from github import Github
 
-
-#глобальные переменные
+# Глобальные переменные.
+# Хранятся настройки и параметры по умолчанию, которые управляют процессом генерации и анализа.
 ad_description = ""
 free_question = ""
 message = ""
-tags = ""  
+tags = ""
 children_age = (0, 18)
 children_count = (0, 3)
-marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
+marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-a)"]
 city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
 selected_regions = ["Москва", "Московская область"]
 education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
@@ -26,9 +31,38 @@ generation_id = ""
 number_of_persons = 20
 number_of_persons_analysis = 20
 
-#функции
-def OpenAIChat(promt):
 
+def get_file_from_github(file_path: str) -> str:
+    """
+    Функция, которая выгружает содержимое файла из GitHub репозитория в виде текста.
+    Использует библиотеку requests и секретный токен GitHub (st.secrets.GITHUB_API_TOKEN).
+
+    :param file_path: относительный путь к файлу в репозитории (например, "person_generation.promt")
+    :return: текстовое содержимое файла
+    """
+    # Сформируем URL-адрес для raw-контента
+    url = f"https://raw.githubusercontent.com/krolya/great_poc/main/{file_path}"
+    
+    # Добавим заголовок с токеном
+    headers = {"Authorization": f"Bearer {st.secrets.GITHUB_API_TOKEN}"}
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # выбросит исключение, если не 2xx
+    return response.text
+
+
+def openai_chat(system_prompt: str, user_prompt: str) -> str:
+    """
+    Обертка для обращения к OpenAI API.
+
+    Принимает два параметра:
+     - system_prompt: текст, отправляемый как системное сообщение (role="system")
+     - user_prompt: текст, отправляемый как пользовательское сообщение (role="user")
+    Возвращает строковый ответ от модели, предполагается что это JSON.
+    """
+    global model_name
+
+    # В зависимости от имени модели, выбираем разные настройки клиента
     if "deepseek" not in model_name.lower():
         client = OpenAI(
             api_key=st.secrets.OPENAI_API_KEY,
@@ -39,394 +73,385 @@ def OpenAIChat(promt):
             api_key=st.secrets.NEBIUS_API_KEY,
         )
 
-    #st.write(model_name)
-    #st.info("Запускаем чат...")
+    # Формируем список сообщений: system + user
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
 
+    # Делаем запрос к модели
     completion = client.chat.completions.create(
         model=model_name,
-        messages=[{"role":"user","content": promt}],
+        messages=messages,
         response_format={"type": "json_object"}
     )
-        #max_tokens=100,
-        #temperature=1,
-        #top_p=1,
-        #top_k=50,
-        #n=1,
-        #stream=False,
-        #stream_options=null,
-        #stop=null,
-        #presence_penalty=0,
-        #frequency_penalty=0,
-        #logit_bias=null,
-        #logprobs=False,
-        #top_logprobs=null,
-        #user=null,
-        #extra_body={
-        #    "guided_json": {"type": "object", "properties": {...}}
-        #},
-   
+
+    # Если включен режим отладки, выведем ответ модели
     if st.session_state.debug:
-        st.info("Что вернул OpenAI:") 
+        st.info("Что вернул OpenAI:")
         st.write(completion.choices[0].message.content)
 
+    # Возвращаем содержимое первого варианта
     return completion.choices[0].message.content
 
-def upload_to_airtable(data, table_name="Personas"):
+
+def upload_to_airtable(data, table_name="Personas") -> int:
+    """
+    Загрузка сгенерированных данных в Airtable.
+
+    :param data: JSON-строка (предположительно, от модели)
+    :param table_name: имя таблицы в Airtable
+    :return: кол-во записей, успешно загруженных
+    """
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
-    
-    #records = [{"fields": person} for person in data["records"]]]
     st.info("Загружаем данные в Airtable...")
-    #st.write(data)
-    records = json.loads(data)
-    #st.write(records)
-    #st.write(len(records))
-    #for person in records["records"]:
-    #    st.write(person)
-    #    response = table.create(person)
-    #    st.write(response.json())
 
+    # Преобразуем строку JSON в python-объект
+    records = json.loads(data)
+    # Batch create - заливаем все записи одним махом
     response = table.batch_create(records["records"])
-    if st.session_state.debug: st.write(response)
+
+    if st.session_state.debug:
+        st.write(response)
+
     return len(response)
 
-def GeneratePerson():
 
-    generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-    prompt = f"""
-    Ты специальный сервис по созданию персонажей. Твоя задача сгенерировать JSON-объект с случайными персонажами по следующим правилам:
-
-    Количество персонажей: {number_of_persons}
-    Процент мужчин в выборке должно быть следующим: {gender_ratio}% 
-    Имя персонажа: случайное имя в зависимости от пола
-    Возраст: от {age_range[0]} до {age_range[1]} лет, если есть дети, то всегда >= 18 лет
-    Доход: случайный доход из списка {income_selected}
-    Образование: случайное образование из списка {education_selected}
-    Регион проживания: случайный регион из списка {selected_regions}
-    Размер населенного пункта: случайный размер из списка {city_size_selected}, работает только для областей, если выбраны Москва или Санкт-Петербург, то всегда "Свыше 1 000 000"
-    Семейное положение: случайное образование из списка {marital_selected}
-    Количество детей: от {children_count[0]} до {children_count[1]}
-    Возраст детей: от {children_age[0]} до {children_age[1]}
-    
-    Верни структурированный JSON в формате и только его без каких либо пояснений или чего-либо еще в ответе по следующему шаблону, напротив каждой строки будет дано пояснение после знака#:
-    
-    {{
-        "records":[ #эта строка будет всегда присутствовать, независимости от количества персонажей
-        {{
-            "Name": "Иван Петров", #случайное имя в зависимости от пола
-            "Gender": "Мужской", #случайный пол
-            "Marital status": "В браке", #случайное семейное положение из списка {marital_selected}, очень важно, чтобы значение было ровно как в списке, т.е. "Одинок (-а)", а не "Одинок" или "Одинока"
-            "Income": "Средний", #случайный доход из списка {income_selected}
-            "Age": 28, #случайный возраст от {age_range[0]} до {age_range[1]} лет
-            "Children": 0, #случайное количество детей от {children_count[0]} до {children_count[1]}
-            "Children age 1": 0 #случайный возраст ребенка от {children_age[0]} до {children_age[1]}, если количество детей = 1
-            "Children age 2": 0 #случайный возраст ребенка от {children_age[0]} до {children_age[1]}, если количество детей = 2 
-            "Children age 3": 0 #случайный возраст ребенка от {children_age[0]} до {children_age[1]}, если количество детей = 3
-            "Children age 4": 0 #случайный возраст ребенка от {children_age[0]} до {children_age[1]}, если количество детей = 4
-            "Children age 5": 0 #случайный возраст ребенка от {children_age[0]} до {children_age[1]}, если количество детей = 5
-            "Region": "Москва", #случайный регион из списка {selected_regions}
-            "City size": "Свыше 1 000 000", #случайный размер из списка {city_size_selected}
-            "Education": "Среднее", #случайное образование из списка {education_selected}
-            "Generation ID": "{generation_id}", #уникальный идентификатор генерации
-            "Generation model": "{model_name}", #модель генерации
-            "Description": "Здесь нужно дать полное описание персоны с учетом всех параметров выше и расширь его каким-то дополнительным описанием", #полное описание персонажа
-        }},
-        {{
-        #описание следующего персонажа, может быть сколько угодно пока не равно количеству персонажей
-        }}
-    }}
+def read_from_airtable(table_id: str, page_size: int = 20, max_records: int = 1000):
     """
+    Функция для чтения данных из указанной таблицы Airtable.
+    Возвращает генератор (yield) групп записей.
 
-    # GitHub API не работает в Streamlit
-    # Подключаемся к GitHub
-    #g = Github(st.secrets.GITHUB_API_TOKEN)
-
-    # Получаем репозиторий
-    #repo = g.get_repo("krolya/great_poc")
-
-    # Получаем файл из репозитория
-    #prompt = repo.get_contents("person_generation.promt").decoded_content.decode("utf-8")
-
-    # Заменяем переменные в шаблоне ОЧЕНЬ ОЧЕНЬ НЕБЕЗОПАСНЫМ способом
-    #formatted_prompt = eval(f'f"""{prompt}"""')
+    :param table_id: ID (или имя) таблицы в Airtable
+    :param page_size: сколько записей читать за один вызов
+    :param max_records: максимальное число записей
+    :return: генератор, который по очереди возвращает блоки (списки) записей.
+    """
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    table = api.table(st.secrets.AIRTABLE_BASE_ID, table_id)
+    yield from table.iterate(page_size=page_size, max_records=max_records)
 
 
-    #print("Содержимое файла:", file_content)
+def generate_person():
+    """
+    Функция, генерирующая персонажей:
+    1) Подгружает person_generation.promt из репозитория.
+    2) Формирует system_prompt и user_prompt.
+    3) Вызывает openai_chat.
+    4) Загружает результат в Airtable.
+    """
+    global generation_id
+    generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+
+     # system_prompt задает общий контекст
+    system_prompt = get_file_from_github("person_generation_system.promt")
+
+    # Подгружаем шаблон промта для генерации персон
+    person_prompt_template = get_file_from_github("person_generation.promt")
+
+    # Заменяем плейсхолдеры
+    user_prompt = (person_prompt_template
+        .replace("{number_of_persons}", str(number_of_persons))
+        .replace("{gender_ratio}", str(gender_ratio))
+        .replace("{age_min}", str(age_range[0]))
+        .replace("{age_max}", str(age_range[1]))
+        .replace("{income_selected}", str(income_selected))
+        .replace("{education_selected}", str(education_selected))
+        .replace("{selected_regions}", str(selected_regions))
+        .replace("{city_size_selected}", str(city_size_selected))
+        .replace("{marital_selected}", str(marital_selected))
+        .replace("{children_min}", str(children_count[0]))
+        .replace("{children_max}", str(children_count[1]))
+        .replace("{children_age_min}", str(children_age[0]))
+        .replace("{children_age_max}", str(children_age[1]))
+        .replace("{generation_id}", generation_id)
+        .replace("{model_name}", model_name)
+    )
+
     if st.session_state.debug:
-        st.info("Promt:") 
-        st.write(prompt)
+        st.info("Преобразованный пользовательский промт (user_prompt):")
+        st.write(user_prompt)
 
+    # Генерация
     with st.spinner("Генерация персонажей..."):
-        #st.write(generation_id)
-        generated_data = OpenAIChat(prompt)
+        generated_data = openai_chat(system_prompt, user_prompt)
         if st.session_state.debug:
             st.info("Generated data:")
             st.write(generated_data)
-    
+
     st.success("Персонажи успешно сгенерированы!")
-    
+
+    # Загрузка в Airtable
     with st.spinner("Загрузка в Airtable..."):
         uploaded_count = upload_to_airtable(generated_data)
-    
+
     st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
 
-def AnalyseAD():
+
+def analyze_ad():
+    """
+    Функция для аналитики рекламы:
+    1) Подгружает ad_analysis.promt из GitHub.
+    2) Использует read_from_airtable, чтобы получить записи персон.
+    3) Для каждой записи формирует user_prompt + system_prompt.
+    4) Результат сохраняется в таблице Responses.
+    """
     st.write("Анализ рекламы")
     response_test_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
 
-    api = Api(st.secrets.AIRTABLE_API_TOKEN)
-    table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
+    # Общий системный контекст
+    system_prompt = get_file_from_github("ad_analysis_system.promt")
 
+    # Подгружаем шаблон аналитики
+    ad_analysis_template = get_file_from_github("ad_analysis.promt")
+
+    # Запускаем чтение персон из Airtable
     with st.spinner("Генерация ответов..."):
-        for records in table.iterate(page_size=number_of_persons_analysis, max_records=1000):
+        for records in read_from_airtable(
+            table_id=st.secrets.AIRTABLE_TABLE_ID,
+            page_size=number_of_persons_analysis,
+            max_records=1000
+        ):
             for record in records:
 
                 if st.session_state.debug:
                     st.info("Record:")
                     st.write(record)
-                #st.write(record["fields"]["Name"])
-                description = record["fields"]["Description"]
-                name = record["fields"]["Name"]
-                age = record["fields"]["Age"]
-                region = record["fields"]["Region"]
-                city_size = record["fields"]["City size"]
-                children = record["fields"]["Children"]
-                income = record["fields"]["Income"]
-                marital_status = record["fields"]["Marital status"]
-                education = record["fields"]["Education"]
-                children_age_1 = record["fields"]["Children age 1"]
-                children_age_2 = record["fields"]["Children age 2"]
-                children_age_3 = record["fields"]["Children age 3"]
-                children_age_4 = record["fields"]["Children age 4"]
-                children_age_5 = record["fields"]["Children age 5"]
-                record_id = record["id"]
 
+                # Достанем нужные поля
+                description = record["fields"].get("Description", "")
+                name = record["fields"].get("Name", "")
+                age = record["fields"].get("Age", "")
+                region = record["fields"].get("Region", "")
+                city_size = record["fields"].get("City size", "")
+                children = record["fields"].get("Children", 0)
+                income = record["fields"].get("Income", "")
+                marital_status = record["fields"].get("Marital status", "")
+                education = record["fields"].get("Education", "")
+                children_age_1 = record["fields"].get("Children age 1", 0)
+                children_age_2 = record["fields"].get("Children age 2", 0)
+                children_age_3 = record["fields"].get("Children age 3", 0)
+                children_age_4 = record["fields"].get("Children age 4", 0)
+                children_age_5 = record["fields"].get("Children age 5", 0)
+                record_id = record.get("id", "")
 
+                # Формируем user_prompt на основе шаблона
+                user_prompt = (
+                    ad_analysis_template
+                    .replace("{description}", description)
+                    .replace("{name}", name)
+                    .replace("{age}", str(age))
+                    .replace("{region}", region)
+                    .replace("{city_size}", city_size)
+                    .replace("{children}", str(children))
+                    .replace("{income}", income)
+                    .replace("{marital_status}", marital_status)
+                    .replace("{education}", education)
+                    .replace("{children_age_1}", str(children_age_1))
+                    .replace("{children_age_2}", str(children_age_2))
+                    .replace("{children_age_3}", str(children_age_3))
+                    .replace("{children_age_4}", str(children_age_4))
+                    .replace("{children_age_5}", str(children_age_5))
+                    .replace("{record_id}", record_id)
+                    .replace("{response_test_id}", response_test_id)
+                    .replace("{ad_description}", ad_description)
+                    .replace("{message}", message)
+                    .replace("{free_question}", free_question)
+                )
 
-                prompt = f"""
-                Представь себе, что ты {description}, тебя зовут {name} и тебе {age} лет, 
-                ты живешь в {region}, в городе с населением {city_size}, у тебя {children} детей, 
-                возрастом {children_age_1}, {children_age_2}, {children_age_3}, {children_age_4}, {children_age_5}, 
-                твой доход {income}, ты {marital_status}, твое образование {education}.
+                if st.session_state.debug:
+                    st.info("Сформированный user_prompt для анализа рекламы")
+                    st.write(user_prompt)
 
-                Внимательно прочитай описание рекламы, которое дано ниже:
-                    {ad_description} 
-                    
-                После этого ответь следующие вопросы (если вопроса нет, то просто пропускаем его):
-                1. Насколько понятна вам реклама?
-                2. Насколько вам нравится данная реклама?
-                3. Насколько вы доверяете данной рекламе?
-                4. Насколько данная реклама отличается от рекламы конкурентов?
-                5. Насколько доносится следующее сообщение {message}?
-                6. {free_question}
+                # Запрос к модели
+                generated_data = openai_chat(system_prompt, user_prompt)
 
-                Верни структурированный JSON с твоими ответами в формате и только его без каких либо пояснений или чего-либо еще в ответе по следующему шаблону, напротив каждой строки будет дано пояснение после знака#:
-
-                {{
-                    "records":[ #эта строка будет всегда присутствовать, независимости от количества ответов
-                    {{
-                        "Persona": [{record_id}], #ID персоны, которая отвечает на вопросы
-                        "Response test ID": "{response_test_id}", #уникальный идентификатор теста
-                        "Response clarity score": 0, #оценка понятности рекламы от 0 до 100, где 0 реклама вообще не понятна, 100 - понятна на 100%
-                        "Response clarity description": "Текст комментария", #комментарий к оценке понятности
-                        "Response likeability score": 0, #оценка нравится ли реклама, от 0 до 100, где 0 - не нравится, 100 - нравится
-                        "Response likeability description": "Текст комментария", #комментарий к оценке нравится ли реклама
-                        "Response trust score": 0, #оценка доверия к рекламе, от 0 до 100, где 0 - не доверяю, 100 - доверяю
-                        "Response trust description": "Текст комментария", #комментарий к оценке доверия к рекламе
-                        "Response diversity score": 0, #оценка отличия от конкурентов, от 0 до 100, где 0 - не отличается, 100 - отличается
-                        "Response diversity description": "Текст комментария", #комментарий к оценке отличия от конкурентов
-                        "Response message score": 0, #оценка доносится ли сообщение, от 0 до 100, где 0 - не доносится, 100 - доносится
-                        "Response message description": "Текст комментария", #комментарий к оценке доносится ли сообщение
-                        "Response free question 1": "Текст ответа", #ответ на свободный вопрос
-                        "Response description": "Свободный комментарий в целом на рекламу", #здесь нужно подытожить в целом впечатление от рекламы и ответы на вопросы, комментарий должен совпадать с оценками
-                    }}
-                }} """
-
-                if st.session_state.debug: 
-                    st.info("Promt:")
-                    st.write(prompt)
-                
-                generated_data = OpenAIChat(prompt)
-
-                if st.session_state.debug: 
+                if st.session_state.debug:
                     st.info("Generated data:")
                     st.write(generated_data)
 
+                # Сохраняем в таблицу "Responses"
                 upload_to_airtable(generated_data, "Responses")
 
     st.success("Анализ успешно завершен!")
-     
 
 
+def show_generation_tab():
+    """
+    Отрисовывает на правой колонке вкладки "Генерация персон" кнопку для запуска генерации
+    и селектор выбора модели.
+    """
+    global number_of_persons, gender_ratio, age_range, income_selected, education_selected, selected_regions
+    global city_size_selected, marital_selected, children_count, children_age, tags, model_name
 
-# Настройка страницы
-st.set_page_config(page_title="Более нормальный человек", layout="wide")
-if "debug" not in st.session_state:
-    st.session_state.debug = False
+    st.header("Генерация персон")
 
-# Добавляем CSS для задания высоты заголовка (примерно 5% от высоты экрана)
-#st.markdown("""
-#<style>
-#    .header {
-#        height: 5vh;
-#        display: flex;
-#        align-items: center;
-#        justify-content: center;
-#    }
-#</style>
-#""", unsafe_allow_html=True)
+    # Выбор модели
+    model_name = st.selectbox(
+        "Выберите модель",
+        [
+            "deepseek-ai/DeepSeek-V3",
+            "deepseek-ai/DeepSeek-R1",
+            "meta-llama/Llama-3.3-70B-Instruct",
+            "gpt-4o",
+            "o1",
+            "o1-mini"
+        ],
+        index=3
+    )
 
-# Верхняя часть — заголовок
-#st.markdown('<div class="header"><h1>Генерация персон</h1></div>', unsafe_allow_html=True)
+    if st.button("Сгенерировать"):
+        st.info("Генерация началась...")
+        generate_person()
 
-# Создаем три вкладки
-tab1, tab2, tab3 = st.tabs(["Генерация персон", "Аналитика", "Настройки"])
 
-with tab1:
+def show_analysis_tab():
+    """
+    Отрисовывает на правой колонке вкладки "Аналитика" поля для ввода описания рекламы,
+    целевого сообщения, свободного вопроса и кнопку запуска анализа.
+    """
+    global number_of_persons_analysis, ad_description, message, free_question
 
-    # 1. Заголовок
-    # Разбиваем остальную область на две колонки с пропорцией 30:70
-    col_left, col_right = st.columns([3, 7])
+    st.header("Анализ рекламы")
 
-    # Левая колонка: "Целевая аудитория" и фильтры
-    with col_left:
-        st.header("Целевая аудитория")
+    # Поля для ввода описания рекламы, ключевого сообщения и свободного вопроса
+    ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
+    message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
+    free_question = st.text_input(
+        "Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне"
+    )
 
-        with st.expander("Основные настройки", expanded=True):
+    if st.button("Анализировать"):
+        st.info("Анализ начался...")
+        analyze_ad()
 
-            # 5.0. Слайдер для выбора количества персон для генерации
-            number_of_persons = st.slider("Количество персон для генерации", min_value=0, max_value=100, value=20)
 
-            # 5.1. Слайдер для выбора соотношения мужчин и женщин (0-100%)
-            gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
+def show_filters_tab_generation():
+    """
+    Отрисовывает на левой колонке вкладки "Генерация персон" фильтры для настройки целевой аудитории.
+    """
+    global number_of_persons, gender_ratio, age_range, income_selected, education_selected
+    global selected_regions, city_size_selected, marital_selected, children_count, children_age, tags
 
-            # 5.2. Двойной слайдер для выбора диапазона возраста
-            age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
+    st.header("Целевая аудитория")
 
-            # 5.3. Доход
-            income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-            income_selected = st.multiselect("Выберите группу доходов", options=income_options,
-                                                default=income_options)
+    with st.expander("Основные настройки", expanded=True):
+        number_of_persons = st.slider("Количество персон для генерации", min_value=0, max_value=100, value=20)
+        gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
+        age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
+        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+        income_selected = st.multiselect("Выберите группу доходов", options=income_options, default=income_options)
 
-        # 5.3. Фильтр «Образование»
-        with st.expander("Образование", expanded=True):
-            education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
-            education_selected = st.multiselect("Выберите образование", options=education_options,
-                                                default=education_options)
+    with st.expander("Образование", expanded=True):
+        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
+        education_selected = st.multiselect(
+            "Выберите образование", options=education_options, default=education_options
+        )
 
-        # 5.4. Фильтр «Регион проживания»
-        all_regions = [
-            "Москва",
-            "Московская область",
-            "Санкт-Петербург",
-            "Новосибирская область",
-            "Свердловская область",
-            "Краснодарский край",
-            "Республика Татарстан",
-            "Челябинская область",
-            "Самарская область",
-            "Оренбургская область"
-        ]
-        with st.expander("Регион проживания", expanded=True):
-            # Кнопки для выбора/снятия всех флажков
-            col_btn1, col_btn2 = st.columns(2)
-            if col_btn1.button("Выбрать все", key="select_all_regions"):
-                for region in all_regions:
-                    st.session_state[f"region_{region}"] = True
-            if col_btn2.button("Снять все", key="deselect_all_regions"):
-                for region in all_regions:
-                    st.session_state[f"region_{region}"] = False
+    all_regions = [
+        "Москва",
+        "Московская область",
+        "Санкт-Петербург",
+        "Новосибирская область",
+        "Свердловская область",
+        "Краснодарский край",
+        "Республика Татарстан",
+        "Челябинская область",
+        "Самарская область",
+        "Оренбургская область"
+    ]
 
-            selected_regions = []
+    with st.expander("Регион проживания", expanded=True):
+        col_btn1, col_btn2 = st.columns(2)
+        if col_btn1.button("Выбрать все", key="select_all_regions"):
             for region in all_regions:
-                # По умолчанию Москва и Московская область включены
-                default = True if region in ["Москва", "Московская область"] else False
-                checked = st.checkbox(
-                    region,
-                    value=st.session_state.get(f"region_{region}", default),
-                    key=f"region_{region}"
-                )
-                if checked:
-                    selected_regions.append(region)
+                st.session_state[f"region_{region}"] = True
+        if col_btn2.button("Снять все", key="deselect_all_regions"):
+            for region in all_regions:
+                st.session_state[f"region_{region}"] = False
 
-            # 5.5. Фильтр «Размер населенного пункта»
-            st.markdown("#### Размер населенного пункта")
-            city_size_options = [
-                "До 100 0000 человек",
-                "От 100 000 до 500 000",
-                "От 500 000 до 1 000 000",
-                "Свыше 1 000 000"
-            ]
-            city_size_selected = st.multiselect("Выберите размер населенного пункта", options=city_size_options,
-                                                default=city_size_options)
+        selected_regions = []
+        for region in all_regions:
+            default = True if region in ["Москва", "Московская область"] else False
+            checked = st.checkbox(
+                region,
+                value=st.session_state.get(f"region_{region}", default),
+                key=f"region_{region}"
+            )
+            if checked:
+                selected_regions.append(region)
 
-        with st.expander("Семейное положение", expanded=True):
+        st.markdown("#### Размер населенного пункта")
+        city_size_options = [
+            "До 100 0000 человек",
+            "От 100 000 до 500 000",
+            "От 500 000 до 1 000 000",
+            "Свыше 1 000 000"
+        ]
+        city_size_selected = st.multiselect(
+            "Выберите размер населенного пункта", 
+            options=city_size_options,
+            default=city_size_options
+        )
 
-            # 5.8. Фильтр «Семейное положение»
-            marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
-            marital_selected = st.multiselect("Выберите семейное положение", options=marital_options,
-                                            default=marital_options)
-            # 5.6. Двойной слайдер для выбора диапазона количества детей
-            children_count = st.slider("Количество детей", min_value=0, max_value=5, value=(0, 3))
+    with st.expander("Семейное положение", expanded=True):
+        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-a)"]
+        marital_selected = st.multiselect(
+            "Выберите семейное положение", options=marital_options, default=marital_options
+        )
+        children_count = st.slider("Количество детей", min_value=0, max_value=5, value=(0, 3))
+        children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
 
-            # 5.7. Двойной слайдер для выбора диапазона возраста детей
-            children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
-    
-        
-        # 5.9. Поле для ввода тэгов
-        tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
-
-        
-
-    # Правая колонка: "Генерация"
-    with col_right:
-        st.header("Генерация персон")
-
-        #st.write("Здесь можно разместить настройки генерации или результаты.")
-
-        
-
-        # 5.12 Выберите модель
-        model_name = st.selectbox("Выберите модель", ["deepseek-ai/DeepSeek-V3",
-                                                "deepseek-ai/DeepSeek-R1",
-                                                "meta-llama/Llama-3.3-70B-Instruct",
-                                                "gpt-4o",
-                                                "o1",
-                                                "o1-mini"], index=3)
-
-        # Например, можно добавить кнопку для запуска генерации
-        if st.button("Сгенерировать"):
-            st.info("Генерация началась...")
-            GeneratePerson()
-
-with tab2:
-    col_left, col_right = st.columns([3, 7])
-    with col_left:
-        st.header("Фильтры")
-
-        with st.expander("Основные настройки", expanded=True):
-
-            # 5.0. Слайдер для выбора количества персон для генерации
-            number_of_persons_analysis = st.slider("Количество персон для анализа", min_value=0, max_value=100, value=20)
+    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
 
 
-    with col_right:
-        st.header("Анализ рекламы")
+def show_filters_tab_analysis():
+    """
+    Отрисовывает на левой колонке вкладки "Аналитика" фильтры для анализа рекламы.
+    """
+    global number_of_persons_analysis
 
-        # 5.10. Поле для ввода сообщения для проверки
-        ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
+    st.header("Фильтры")
+    with st.expander("Основные настройки", expanded=True):
+        number_of_persons_analysis = st.slider(
+            "Количество персон для анализа", min_value=0, max_value=100, value=20
+        )
 
-        # 5.10. Поле для ввода сообщения для проверки
-        message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
 
-        # 5.11. Поле для ввода сообщения для проверки
-        free_question = st.text_input("Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне")
+def main():
+    """
+    Основная функция:
+    1) Настраивает страницу,
+    2) Создает вкладки ("Генерация персон", "Аналитика", "Настройки"),
+    3) В каждой вкладке отображает две колонки: слева - фильтры, справа - основная кнопка/форма.
+    """
 
-        if st.button("Анализировать"):
-            st.info("Анализ начался...")
-            AnalyseAD()
+    # Настройка страницы
+    st.set_page_config(page_title="Более нормальный человек", layout="wide")
 
-with tab3:
-    st.checkbox("Выводить отладочную информацию", key="debug")
+    if "debug" not in st.session_state:
+        st.session_state.debug = False
 
-    
+    tab1, tab2, tab3 = st.tabs(["Генерация персон", "Аналитика", "Настройки"])
+
+    with tab1:
+        col_left, col_right = st.columns([3, 7])
+        with col_left:
+            show_filters_tab_generation()
+        with col_right:
+            show_generation_tab()
+
+    with tab2:
+        col_left, col_right = st.columns([3, 7])
+        with col_left:
+            show_filters_tab_analysis()
+        with col_right:
+            show_analysis_tab()
+
+    with tab3:
+        st.checkbox("Выводить отладочную информацию", key="debug")
+
+
+if __name__ == "__main__":
+    main()
