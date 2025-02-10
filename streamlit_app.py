@@ -22,7 +22,7 @@ tags = ""
 # Фильтры (используются в генерации и анализе)
 children_age = (0, 18)
 children_count = (0, 3)
-marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-a)"]
+marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
 city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
 selected_regions = ["Москва", "Московская область"]
 education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
@@ -45,7 +45,7 @@ analysis_income_selected = ["Низкий", "Низкий плюс"," Средн
 analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
 analysis_selected_regions = ["Москва", "Московская область"]
 analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
-analysis_marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-a)"]
+analysis_marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
 analysis_children_count = (0, 3)
 analysis_children_age = (0, 18)
 
@@ -445,7 +445,7 @@ def show_filters_tab_generation():
         )
 
     with st.expander("Семейное положение", expanded=True):
-        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-a)"]
+        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
         marital_selected = st.multiselect(
             "Выберите семейное положение", marital_options, default=marital_options,
             key="multiselect_marital_gen"
@@ -528,7 +528,7 @@ def show_filters_tab_analysis():
         )
 
         st.markdown("##### Семейное положение")
-        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-a)"]
+        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
         analysis_marital_selected = st.multiselect(
             "Семейное положение", marital_options, default=marital_options,
             key="multiselect_marital_analysis"
