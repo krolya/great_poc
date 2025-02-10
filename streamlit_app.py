@@ -330,8 +330,66 @@ def analyze_ad():
     st.success("Анализ успешно завершен!")
 
 # -------------------
+# Функция получения данных из Airtable
+# -------------------
+def fetch_distinct_values(table_name, field_name, filter_by=None):
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
+    formula = None
+    if filter_by:
+        formula = EQ(Field("Ad name"), filter_by)
+    records = table.all(formula=formula)
+    return list(set(record["fields"].get(field_name, "") for record in records if field_name in record["fields"]))
+
+# -------------------
 # UI вкладок
 # -------------------
+def show_response_analysis_tab():
+    st.header("Анализ ответов")
+
+    col_left, col_right = st.columns([3, 7])
+    
+    with col_left:
+        st.subheader("Фильтры")
+        ad_names = fetch_distinct_values("Responses", "Ad name")
+        selected_ad_name = st.selectbox("Ad name", ad_names, key="ad_name_filter")
+        
+        response_test_ids = []
+        if selected_ad_name:
+            response_test_ids = fetch_distinct_values("Responses", "Response test ID", filter_by=selected_ad_name)
+        selected_response_test_ids = st.multiselect("Response test ID", response_test_ids, key="response_test_id_filter")
+    
+    with col_right:
+        st.subheader("Анализ ответов")
+        
+        if selected_ad_name and selected_response_test_ids:
+            api = Api(st.secrets.AIRTABLE_API_TOKEN)
+            table = api.table(st.secrets.AIRTABLE_BASE_ID, "Responses")
+            formula = AND(
+                EQ(Field("Ad name"), selected_ad_name),
+                OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
+            )
+            response_records = table.all(formula=formula)
+
+            person_ids = [record["fields"].get("Persona") for record in response_records if "Persona" in record["fields"]]
+            person_table = api.table(st.secrets.AIRTABLE_BASE_ID, "Personas")
+            person_records = person_table.all(formula=OR(*[EQ(Field("Record ID"), pid) for pid in person_ids]))
+
+            response_data = [
+                {"ID": r.get("id", ""), "Ad name": r["fields"].get("Ad name", ""), "Response": r["fields"].get("Response", "")}
+                for r in response_records
+            ]
+            st.write("Ответы:")
+            st.dataframe(response_data)
+
+            person_data = [
+                {"ID": p.get("id", ""), "Name": p["fields"].get("Name", ""), "Age": p["fields"].get("Age", "")}
+                for p in person_records
+            ]
+            st.write("Персоны, давшие ответы:")
+            st.dataframe(person_data)
+
+
 def show_generation_tab():
     global number_of_persons, gender_ratio, age_range, income_selected, education_selected
     global selected_regions, city_size_selected, marital_selected, children_count, children_age, tags, model_name
@@ -674,7 +732,7 @@ def main():
     if "debug" not in st.session_state:
         st.session_state.debug = False
 
-    tab1, tab2, tab3 = st.tabs(["Генерация персон", "Аналитика", "Настройки"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Генерация персон", "Аналитика", "Анализ ответов", "Настройки"])
 
     with tab1:
         col_left, col_right = st.columns([3, 7])
@@ -689,8 +747,11 @@ def main():
             show_filters_tab_analysis()
         with col_right:
             show_analysis_tab()
-
+    
     with tab3:
+        show_response_analysis_tab()
+
+    with tab4:
         st.checkbox("Выводить отладочную информацию", key="debug")
 
 if __name__ == "__main__":
