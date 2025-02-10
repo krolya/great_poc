@@ -433,12 +433,219 @@ def show_analysis_tab():
         analyze_ad()
 
 
+
 def show_filters_tab_generation():
-    pass
+    global number_of_persons, gender_ratio, age_range, income_selected, education_selected
+    global selected_regions, city_size_selected, marital_selected, children_count, children_age, tags
+
+    st.header("Целевая аудитория")
+
+    with st.expander("Основные настройки", expanded=True):
+        number_of_persons = st.slider(
+            "Количество персон для генерации", 
+            min_value=0, max_value=100, value=20,
+            key="slider_num_persons_gen"
+        )
+        gender_ratio = st.slider(
+            "Процент мужчин в выборке (%)", 
+            min_value=0, max_value=100, value=50,
+            key="slider_gender_ratio_gen"
+        )
+        age_range = st.slider(
+            "Возраст", 
+            min_value=4, max_value=100, value=(18, 60),
+            key="slider_age_range_gen"
+        )
+        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+        income_selected = st.multiselect(
+            "Выберите группу доходов", 
+            options=income_options, 
+            default=income_options,
+            key="multiselect_income_gen"
+        )
+
+    with st.expander("Образование", expanded=True):
+        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
+        education_selected = st.multiselect(
+            "Выберите образование", 
+            options=education_options, 
+            default=education_options,
+            key="multiselect_edu_gen"
+        )
+
+    all_regions = [
+        "Москва",
+        "Московская область",
+        "Санкт-Петербург",
+        "Новосибирская область",
+        "Свердловская область",
+        "Краснодарский край",
+        "Республика Татарстан",
+        "Челябинская область",
+        "Самарская область",
+        "Оренбургская область"
+    ]
+
+    with st.expander("Регион проживания", expanded=True):
+        col_btn1, col_btn2 = st.columns(2)
+        if col_btn1.button("Выбрать все", key="select_all_regions_gen"):
+            for region in all_regions:
+                st.session_state[f"region_{region}"] = True
+        if col_btn2.button("Снять все", key="deselect_all_regions_gen"):
+            for region in all_regions:
+                st.session_state[f"region_{region}"] = False
+
+        temp_selected = []
+        for region in all_regions:
+            default = True if region in ["Москва", "Московская область"] else False
+            checked = st.checkbox(
+                region,
+                value=st.session_state.get(f"region_{region}", default),
+                key=f"checkbox_gen_{region}"
+            )
+            if checked:
+                temp_selected.append(region)
+        selected_regions = temp_selected
+
+        st.markdown("#### Размер населенного пункта")
+        city_size_options = [
+            "До 100 0000 человек",
+            "От 100 000 до 500 000",
+            "От 500 000 до 1 000 000",
+            "Свыше 1 000 000"
+        ]
+        city_size_selected = st.multiselect(
+            "Выберите размер населенного пункта", 
+            options=city_size_options,
+            default=city_size_options,
+            key="multiselect_city_size_gen"
+        )
+
+    with st.expander("Семейное положение", expanded=True):
+        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
+        marital_selected = st.multiselect(
+            "Выберите семейное положение", 
+            options=marital_options, 
+            default=marital_options,
+            key="multiselect_marital_gen"
+        )
+        children_count = st.slider(
+            "Количество детей", 
+            min_value=0, max_value=5, value=(0, 3),
+            key="slider_children_count_gen"
+        )
+        children_age = st.slider(
+            "Возраст детей", 
+            min_value=0, max_value=18, value=(0, 18),
+            key="slider_children_age_gen"
+        )
+
+    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую", key="tags_gen")
 
 
 def show_filters_tab_analysis():
-    pass
+    global number_of_persons_analysis
+    global analysis_age_range, analysis_income_selected, analysis_education_selected
+    global analysis_selected_regions, analysis_city_size_selected, analysis_marital_selected
+    global analysis_children_count, analysis_children_age
+
+    st.header("Фильтры")
+    with st.expander("Основные настройки", expanded=True):
+        number_of_persons_analysis = st.slider(
+            "Количество персон для анализа", 
+            0, 100, 20, 
+            key="slider_num_persons_analysis"
+        )
+
+    with st.expander("Настройки фильтров (как при генерации)", expanded=True):
+        analysis_age_range = st.slider(
+            "Возраст", 
+            4, 100, (18, 60),
+            key="slider_age_range_analysis"
+        )
+        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+        analysis_income_selected = st.multiselect(
+            "Доход", 
+            options=income_options, 
+            default=income_options,
+            key="multiselect_income_analysis"
+        )
+
+        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
+        analysis_education_selected = st.multiselect(
+            "Образование", 
+            options=education_options, 
+            default=education_options,
+            key="multiselect_edu_analysis"
+        )
+
+        all_regions = [
+            "Москва",
+            "Московская область",
+            "Санкт-Петербург",
+            "Новосибирская область",
+            "Свердловская область",
+            "Краснодарский край",
+            "Республика Татарстан",
+            "Челябинская область",
+            "Самарская область",
+            "Оренбургская область"
+        ]
+
+        st.markdown("##### Регион")
+        col_btn1, col_btn2 = st.columns(2)
+        if col_btn1.button("Выбрать все", key="select_all_regions_analysis"):
+            for region in all_regions:
+                st.session_state[f"analysis_region_{region}"] = True
+        if col_btn2.button("Снять все", key="deselect_all_regions_analysis"):
+            for region in all_regions:
+                st.session_state[f"analysis_region_{region}"] = False
+
+        local_selected_regions = []
+        for region in all_regions:
+            default = True if region in ["Москва", "Московская область"] else False
+            checked = st.checkbox(
+                region,
+                value=st.session_state.get(f"analysis_region_{region}", default),
+                key=f"checkbox_analysis_{region}"
+            )
+            if checked:
+                local_selected_regions.append(region)
+        analysis_selected_regions = local_selected_regions
+
+        st.markdown("##### Размер населенного пункта")
+        city_size_options = [
+            "До 100 0000 человек",
+            "От 100 000 до 500 000",
+            "От 500 000 до 1 000 000",
+            "Свыше 1 000 000"
+        ]
+        analysis_city_size_selected = st.multiselect(
+            "Размер города",
+            options=city_size_options,
+            default=city_size_options,
+            key="multiselect_city_size_analysis"
+        )
+
+        st.markdown("##### Семейное положение")
+        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
+        analysis_marital_selected = st.multiselect(
+            "Семейное положение", 
+            options=marital_options, 
+            default=marital_options,
+            key="multiselect_marital_analysis"
+        )
+        analysis_children_count = st.slider(
+            "Количество детей", 
+            0, 5, (0, 3),
+            key="slider_children_count_analysis"
+        )
+        analysis_children_age = st.slider(
+            "Возраст детей", 
+            0, 18, (0, 18),
+            key="slider_children_age_analysis"
+        )
+
 
 
 def main():
