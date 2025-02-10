@@ -1,6 +1,8 @@
 """
-Добавили уникальные key=... ко всем slider, multiselect, checkbox, button и selectbox
-чтобы не возникало StreamlitDuplicateElementId.
+Добавляем этап отбора персон перед анализом в правой части второй вкладки.
+1) "Отобрать персоны" — кнопка.
+2) При нажатии показывается таблица с отобранными персонами.
+3) Остальное (анализ и т.д.) без изменений.
 """
 
 import streamlit as st
@@ -31,18 +33,12 @@ income_selected = ["Низкий", "Низкий плюс"," Средний", "�
 age_range = (18, 60)
 gender_ratio = 50
 
-# Модель и общее управление
 model_name = "gpt-4o"
 generation_id = ""
-
-# Количество для генерации
 number_of_persons = 20
-# Количество для анализа
 number_of_persons_analysis = 20
 
-# Фильтры для анализа (дублируют логику генерации, могут отличаться по умолчанию)
-analysis_age_range = (18, 60)
-analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+analysis_age_range = (18, 60)\analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
 analysis_selected_regions = ["Москва", "Московская область"]
 analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
@@ -50,10 +46,6 @@ analysis_marital_selected = ["В браке", "Разведен(-а)", "В от�
 analysis_children_count = (0, 3)
 analysis_children_age = (0, 18)
 
-
-# --------------------------------------------------
-# Функции для GitHub, OpenAI, Airtable
-# --------------------------------------------------
 
 def get_file_from_github(file_path: str) -> str:
     url = f"https://raw.githubusercontent.com/krolya/great_poc/main/{file_path}"
@@ -117,57 +109,47 @@ def fetch_analysis_records(formula: str, page_size=100, max_records=1000):
     return all_records
 
 
-# --------------------------------------------------
-# Построение FORMULA для анализа
-# --------------------------------------------------
+from pyairtable.formulas import AND, OR, EQ, GTE, LTE, Field
 
 def build_analysis_formula() -> str:
     conds = []
 
-    # 1) Возраст: Age >= X AND Age <= Y
     conds.append(GTE(Field("Age"), analysis_age_range[0]))
     conds.append(LTE(Field("Age"), analysis_age_range[1]))
 
-    # 2) Income (OR)
     if analysis_income_selected:
         sub_conds = []
         for inc_val in analysis_income_selected:
             sub_conds.append(EQ(Field("Income"), inc_val))
         conds.append(OR(*sub_conds))
 
-    # 3) Education (OR)
     if analysis_education_selected:
         sub_conds = []
         for edu_val in analysis_education_selected:
             sub_conds.append(EQ(Field("Education"), edu_val))
         conds.append(OR(*sub_conds))
 
-    # 4) Region (OR)
     if analysis_selected_regions:
         sub_conds = []
         for reg_val in analysis_selected_regions:
             sub_conds.append(EQ(Field("Region"), reg_val))
         conds.append(OR(*sub_conds))
 
-    # 5) City size (OR)
     if analysis_city_size_selected:
         sub_conds = []
         for city_val in analysis_city_size_selected:
             sub_conds.append(EQ(Field("City size"), city_val))
         conds.append(OR(*sub_conds))
 
-    # 6) Marital status (OR)
     if analysis_marital_selected:
         sub_conds = []
         for m_val in analysis_marital_selected:
             sub_conds.append(EQ(Field("Marital status"), m_val))
         conds.append(OR(*sub_conds))
 
-    # 7) Children count
     conds.append(GTE(Field("Children"), analysis_children_count[0]))
     conds.append(LTE(Field("Children"), analysis_children_count[1]))
 
-    # 8) Возраст детей
     for i in range(1, 6):
         field_name = f"Children age {i}"
         child_in_range = AND(
@@ -185,9 +167,6 @@ def build_analysis_formula() -> str:
     return str(formula_obj)
 
 
-# -------------------
-# Логика генерации
-# -------------------
 def generate_person():
     global generation_id
     generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
@@ -232,9 +211,6 @@ def generate_person():
     st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
 
 
-# -------------------
-# Логика анализа
-# -------------------
 def analyze_ad():
     st.write("Анализ рекламы")
     response_test_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
@@ -350,7 +326,33 @@ def show_generation_tab():
 def show_analysis_tab():
     global number_of_persons_analysis, ad_description, message, free_question
 
-    st.header("Анализ рекламы")
+    # Добавляем новый блок "Отбор персон"
+    st.subheader("Отбор аудитории")
+    if st.button("Отобрать персоны", key="select_persons_button"):
+        # 1) Строим формулу
+        formula = build_analysis_formula()
+        # 2) Загружаем записи
+        records = fetch_analysis_records(formula, page_size=100, max_records=1000)
+
+        # 3) Преобразуем в удобный вид, чтобы показать таблицу
+        data_for_table = []
+        for r in records:
+            fields = r["fields"]
+            data_for_table.append({
+                "ID": r.get("id", ""),
+                "Имя": fields.get("Name", ""),
+                "Возраст": fields.get("Age", 0),
+                "Регион": fields.get("Region", ""),
+                "Доход": fields.get("Income", ""),
+                "Образование": fields.get("Education", ""),
+                "Дети": fields.get("Children", 0)
+                # Можно дополнить остальные поля...
+            })
+        st.write(f"Найдено {len(data_for_table)} персон:")
+        st.dataframe(data_for_table)
+
+    # Остальное без изменений
+    st.subheader("Анализ рекламы")
 
     ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
     message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки", key="ad_message_input")
@@ -592,9 +594,6 @@ def show_filters_tab_analysis():
         )
 
 
-# -------------------
-# Основная функция
-# -------------------
 def main():
     st.set_page_config(page_title="Более нормальный человек", layout="wide")
 
