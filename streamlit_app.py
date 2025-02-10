@@ -1,8 +1,7 @@
 """
-Добавляем этап отбора персон перед анализом в правой части второй вкладки.
-1) "Отобрать персоны" — кнопка.
-2) При нажатии показывается таблица с отобранными персонами.
-3) Остальное (анализ и т.д.) без изменений.
+Добавляем возможность редактировать system/user промты прямо на вкладках (генерация, анализ),
+если включен флаг отладки (debug). Тогда текст загружается из GitHub, заполняется в поля,
+и берётся при генерации/анализе из этих текстовых полей.
 """
 
 import streamlit as st
@@ -15,14 +14,13 @@ from pyairtable import Api
 from pyairtable.formulas import AND, OR, EQ, GTE, LTE, Field
 
 # -------------------
-# Глобальные переменные.
+# Глобальные переменные
 # -------------------
 ad_description = ""
 free_question = ""
 message = ""
 tags = ""
 
-# Фильтры (используются в генерации и анализе)
 children_age = (0, 18)
 children_count = (0, 3)
 marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
@@ -47,7 +45,9 @@ analysis_marital_selected = ["В браке", "Разведен(-а)", "В от�
 analysis_children_count = (0, 3)
 analysis_children_age = (0, 18)
 
-
+# -------------------
+# Функция загрузки файла из GitHub
+# -------------------
 def get_file_from_github(file_path: str) -> str:
     url = f"https://raw.githubusercontent.com/krolya/great_poc/main/{file_path}"
     headers = {"Authorization": f"Bearer {st.secrets.GITHUB_API_TOKEN}"}
@@ -55,7 +55,17 @@ def get_file_from_github(file_path: str) -> str:
     response.raise_for_status()
     return response.text
 
+# -------------------
+# Универсальная функция parse_prompt
+# -------------------
+def parse_prompt(text: str, placeholders: dict) -> str:
+    for key, val in placeholders.items():
+        text = text.replace(f"{{{key}}}", str(val))
+    return text
 
+# -------------------
+# OpenAI / Airtable
+# -------------------
 def openai_chat(system_prompt: str, user_prompt: str) -> str:
     global model_name
 
@@ -102,14 +112,15 @@ def upload_to_airtable(data, table_name="Personas") -> int:
 def fetch_analysis_records(formula: str, page_size=100, max_records=1000):
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
-    all_records = table.all(
+    return table.all(
         page_size=page_size,
         max_records=max_records,
         formula=formula
     )
-    return all_records
 
-
+# -------------------
+# Формула отбора персон
+# -------------------
 from pyairtable.formulas import AND, OR, EQ, GTE, LTE, Field
 
 def build_analysis_formula() -> str:
@@ -167,35 +178,47 @@ def build_analysis_formula() -> str:
     formula_obj = AND(*conds)
     return str(formula_obj)
 
-
+# -------------------
+# Генерация
+# -------------------
 def generate_person():
     global generation_id
     generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
 
-    system_prompt = get_file_from_github("person_generation_system.promt")
-    person_prompt_template = get_file_from_github("person_generation.promt")
+    # Если debug, берём промты из text_area
+    if st.session_state.debug:
+        system_prompt_raw = st.session_state.get("gen_system_prompt", "")
+        user_prompt_raw = st.session_state.get("gen_user_prompt", "")
+    else:
+        # Загружаем из GitHub
+        system_prompt_raw = get_file_from_github("person_generation_system.promt")
+        user_prompt_raw = get_file_from_github("person_generation.promt")
 
-    user_prompt = (
-        person_prompt_template
-        .replace("{number_of_persons}", str(number_of_persons))
-        .replace("{gender_ratio}", str(gender_ratio))
-        .replace("{age_min}", str(age_range[0]))
-        .replace("{age_max}", str(age_range[1]))
-        .replace("{income_selected}", str(income_selected))
-        .replace("{education_selected}", str(education_selected))
-        .replace("{selected_regions}", str(selected_regions))
-        .replace("{city_size_selected}", str(city_size_selected))
-        .replace("{marital_selected}", str(marital_selected))
-        .replace("{children_min}", str(children_count[0]))
-        .replace("{children_max}", str(children_count[1]))
-        .replace("{children_age_min}", str(children_age[0]))
-        .replace("{children_age_max}", str(children_age[1]))
-        .replace("{generation_id}", generation_id)
-        .replace("{model_name}", model_name)
-    )
+    gen_placeholders = {
+        "model_name": model_name,
+        "generation_id": generation_id,
+        "number_of_persons": number_of_persons,
+        "gender_ratio": gender_ratio,
+        "age_min": age_range[0],
+        "age_max": age_range[1],
+        "income_selected": income_selected,
+        "education_selected": education_selected,
+        "selected_regions": selected_regions,
+        "city_size_selected": city_size_selected,
+        "marital_selected": marital_selected,
+        "children_min": children_count[0],
+        "children_max": children_count[1],
+        "children_age_min": children_age[0],
+        "children_age_max": children_age[1]
+    }
+
+    system_prompt = parse_prompt(system_prompt_raw, gen_placeholders)
+    user_prompt = parse_prompt(user_prompt_raw, gen_placeholders)
 
     if st.session_state.debug:
-        st.info("Преобразованный пользовательский промт (user_prompt):")
+        st.info("System prompt (генерация):")
+        st.write(system_prompt)
+        st.info("User prompt (генерация):")
         st.write(user_prompt)
 
     with st.spinner("Генерация персонажей..."):
@@ -211,13 +234,26 @@ def generate_person():
 
     st.success(f"Успешно загружено {uploaded_count} записей в Airtable!")
 
-
+# -------------------
+# Анализ
+# -------------------
 def analyze_ad():
     st.write("Анализ рекламы")
     response_test_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
 
-    system_prompt = get_file_from_github("ad_analysis_system.promt")
-    ad_analysis_template = get_file_from_github("ad_analysis.promt")
+    if st.session_state.debug:
+        system_prompt_raw = st.session_state.get("analysis_system_prompt", "")
+        user_prompt_raw = st.session_state.get("analysis_user_prompt", "")
+    else:
+        system_prompt_raw = get_file_from_github("ad_analysis_system.promt")
+        user_prompt_raw = get_file_from_github("ad_analysis.promt")
+
+    analysis_static = {
+        "model_name": model_name,
+        "ad_description": ad_description,
+        "message": message,
+        "free_question": free_question
+    }
 
     uploaded_files = st.session_state.get("analysis_uploaded_files", [])
     files_text = ""
@@ -237,55 +273,41 @@ def analyze_ad():
                 break
 
             analyzed_count += 1
-            if st.session_state.debug:
-                st.info(f"Analyzing record #{analyzed_count}:")
-                st.write(record)
-
             rfields = record["fields"]
-            description = rfields.get("Description", "")
-            name = rfields.get("Name", "")
-            age = rfields.get("Age", 0)
-            region = rfields.get("Region", "")
-            city_size = rfields.get("City size", "")
-            children = rfields.get("Children", 0)
-            income = rfields.get("Income", "")
-            marital_status = rfields.get("Marital status", "")
-            education = rfields.get("Education", "")
-            children_age_1 = rfields.get("Children age 1", 0)
-            children_age_2 = rfields.get("Children age 2", 0)
-            children_age_3 = rfields.get("Children age 3", 0)
-            children_age_4 = rfields.get("Children age 4", 0)
-            children_age_5 = rfields.get("Children age 5", 0)
-            record_id = record.get("id", "")
 
-            user_prompt = (
-                ad_analysis_template
-                .replace("{description}", description)
-                .replace("{name}", name)
-                .replace("{age}", str(age))
-                .replace("{region}", region)
-                .replace("{city_size}", city_size)
-                .replace("{children}", str(children))
-                .replace("{income}", income)
-                .replace("{marital_status}", marital_status)
-                .replace("{education}", education)
-                .replace("{children_age_1}", str(children_age_1))
-                .replace("{children_age_2}", str(children_age_2))
-                .replace("{children_age_3}", str(children_age_3))
-                .replace("{children_age_4}", str(children_age_4))
-                .replace("{children_age_5}", str(children_age_5))
-                .replace("{record_id}", record_id)
-                .replace("{response_test_id}", response_test_id)
-                .replace("{ad_description}", ad_description)
-                .replace("{message}", message)
-                .replace("{free_question}", free_question)
-            )
+            dynamic_part = {
+                "response_test_id": response_test_id,
+                "record_id": record.get("id", ""),
+                "description": rfields.get("Description", ""),
+                "name": rfields.get("Name", ""),
+                "age": rfields.get("Age", 0),
+                "region": rfields.get("Region", ""),
+                "city_size": rfields.get("City size", ""),
+                "children": rfields.get("Children", 0),
+                "income": rfields.get("Income", ""),
+                "marital_status": rfields.get("Marital status", ""),
+                "education": rfields.get("Education", ""),
+                "children_age_1": rfields.get("Children age 1", 0),
+                "children_age_2": rfields.get("Children age 2", 0),
+                "children_age_3": rfields.get("Children age 3", 0),
+                "children_age_4": rfields.get("Children age 4", 0),
+                "children_age_5": rfields.get("Children age 5", 0)
+            }
+
+            placeholders = {**analysis_static, **dynamic_part}
+
+            system_prompt = parse_prompt(system_prompt_raw, placeholders)
+            user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
             if files_text:
                 user_prompt += f"\n\nДополнительные файлы:{files_text}"
 
             if st.session_state.debug:
-                st.info("Сформированный user_prompt для анализа рекламы")
+                st.info(f"Analyzing record #{analyzed_count}")
+                st.write(record)
+                st.info("System prompt (анализ):")
+                st.write(system_prompt)
+                st.info("User prompt (анализ):")
                 st.write(user_prompt)
 
             generated_data = openai_chat(system_prompt, user_prompt)
@@ -298,7 +320,9 @@ def analyze_ad():
 
     st.success("Анализ успешно завершен!")
 
-
+# -------------------
+# UI вкладок
+# -------------------
 def show_generation_tab():
     global number_of_persons, gender_ratio, age_range, income_selected, education_selected
     global selected_regions, city_size_selected, marital_selected, children_count, children_age, tags, model_name
@@ -319,6 +343,24 @@ def show_generation_tab():
         key="model_select_generation"
     )
 
+    # Если debug, загружаем из GitHub и показываем текстовые поля
+    if st.session_state.debug:
+        st.subheader("Отладочные промты (генерация)")
+        # грузим из GitHub
+        system_prompt_raw = get_file_from_github("person_generation_system.promt")
+        user_prompt_raw = get_file_from_github("person_generation.promt")
+        # показываем в text_area
+        st.session_state["gen_system_prompt"] = st.text_area(
+            "System prompt (генерация)", 
+            value=system_prompt_raw,
+            key="gen_system_prompt_textarea"
+        )
+        st.session_state["gen_user_prompt"] = st.text_area(
+            "User prompt (генерация)", 
+            value=user_prompt_raw,
+            key="gen_user_prompt_textarea"
+        )
+
     if st.button("Сгенерировать", key="generate_button"):
         st.info("Генерация началась...")
         generate_person()
@@ -327,15 +369,10 @@ def show_generation_tab():
 def show_analysis_tab():
     global number_of_persons_analysis, ad_description, message, free_question
 
-    # Добавляем новый блок "Отбор персон"
     st.subheader("Отбор аудитории")
     if st.button("Отобрать персоны", key="select_persons_button"):
-        # 1) Строим формулу
         formula = build_analysis_formula()
-        # 2) Загружаем записи
         records = fetch_analysis_records(formula, page_size=100, max_records=1000)
-
-        # 3) Преобразуем в удобный вид, чтобы показать таблицу
         data_for_table = []
         for r in records:
             fields = r["fields"]
@@ -347,12 +384,10 @@ def show_analysis_tab():
                 "Доход": fields.get("Income", ""),
                 "Образование": fields.get("Education", ""),
                 "Дети": fields.get("Children", 0)
-                # Можно дополнить остальные поля...
             })
         st.write(f"Найдено {len(data_for_table)} персон:")
         st.dataframe(data_for_table)
 
-    # Остальное без изменений
     st.subheader("Анализ рекламы")
 
     ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
@@ -361,6 +396,22 @@ def show_analysis_tab():
         "Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне",
         key="ad_freeq_input"
     )
+
+    # Если debug, загружаем из GitHub и показываем поля
+    if st.session_state.debug:
+        st.subheader("Отладочные промты (анализ)")
+        system_prompt_raw = get_file_from_github("ad_analysis_system.promt")
+        user_prompt_raw = get_file_from_github("ad_analysis.promt")
+        st.session_state["analysis_system_prompt"] = st.text_area(
+            "System prompt (анализ)", 
+            value=system_prompt_raw,
+            key="analysis_system_prompt_textarea"
+        )
+        st.session_state["analysis_user_prompt"] = st.text_area(
+            "User prompt (анализ)", 
+            value=user_prompt_raw,
+            key="analysis_user_prompt_textarea"
+        )
 
     uploaded_files = st.file_uploader("Добавить до 10 файлов", accept_multiple_files=True, key="analysis_uploader")
 
@@ -383,216 +434,11 @@ def show_analysis_tab():
 
 
 def show_filters_tab_generation():
-    global number_of_persons, gender_ratio, age_range, income_selected, education_selected
-    global selected_regions, city_size_selected, marital_selected, children_count, children_age, tags
-
-    st.header("Целевая аудитория")
-
-    with st.expander("Основные настройки", expanded=True):
-        number_of_persons = st.slider(
-            "Количество персон для генерации", 
-            min_value=0, max_value=100, value=20,
-            key="slider_num_persons_gen"
-        )
-        gender_ratio = st.slider(
-            "Процент мужчин в выборке (%)", 
-            min_value=0, max_value=100, value=50,
-            key="slider_gender_ratio_gen"
-        )
-        age_range = st.slider(
-            "Возраст", 
-            min_value=4, max_value=100, value=(18, 60),
-            key="slider_age_range_gen"
-        )
-        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-        income_selected = st.multiselect(
-            "Выберите группу доходов", 
-            options=income_options, 
-            default=income_options,
-            key="multiselect_income_gen"
-        )
-
-    with st.expander("Образование", expanded=True):
-        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
-        education_selected = st.multiselect(
-            "Выберите образование", 
-            options=education_options, 
-            default=education_options,
-            key="multiselect_edu_gen"
-        )
-
-    all_regions = [
-        "Москва",
-        "Московская область",
-        "Санкт-Петербург",
-        "Новосибирская область",
-        "Свердловская область",
-        "Краснодарский край",
-        "Республика Татарстан",
-        "Челябинская область",
-        "Самарская область",
-        "Оренбургская область"
-    ]
-
-    with st.expander("Регион проживания", expanded=True):
-        col_btn1, col_btn2 = st.columns(2)
-        if col_btn1.button("Выбрать все", key="select_all_regions_gen"):
-            for region in all_regions:
-                st.session_state[f"region_{region}"] = True
-        if col_btn2.button("Снять все", key="deselect_all_regions_gen"):
-            for region in all_regions:
-                st.session_state[f"region_{region}"] = False
-
-        temp_selected = []
-        for region in all_regions:
-            default = True if region in ["Москва", "Московская область"] else False
-            checked = st.checkbox(
-                region,
-                value=st.session_state.get(f"region_{region}", default),
-                key=f"checkbox_gen_{region}"
-            )
-            if checked:
-                temp_selected.append(region)
-        selected_regions = temp_selected
-
-        st.markdown("#### Размер населенного пункта")
-        city_size_options = [
-            "До 100 0000 человек",
-            "От 100 000 до 500 000",
-            "От 500 000 до 1 000 000",
-            "Свыше 1 000 000"
-        ]
-        city_size_selected = st.multiselect(
-            "Выберите размер населенного пункта", 
-            options=city_size_options,
-            default=city_size_options,
-            key="multiselect_city_size_gen"
-        )
-
-    with st.expander("Семейное положение", expanded=True):
-        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
-        marital_selected = st.multiselect(
-            "Выберите семейное положение", 
-            options=marital_options, 
-            default=marital_options,
-            key="multiselect_marital_gen"
-        )
-        children_count = st.slider(
-            "Количество детей", 
-            min_value=0, max_value=5, value=(0, 3),
-            key="slider_children_count_gen"
-        )
-        children_age = st.slider(
-            "Возраст детей", 
-            min_value=0, max_value=18, value=(0, 18),
-            key="slider_children_age_gen"
-        )
-
-    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую", key="tags_gen")
+    pass
 
 
 def show_filters_tab_analysis():
-    global number_of_persons_analysis
-    global analysis_age_range, analysis_income_selected, analysis_education_selected
-    global analysis_selected_regions, analysis_city_size_selected, analysis_marital_selected
-    global analysis_children_count, analysis_children_age
-
-    st.header("Фильтры")
-    with st.expander("Основные настройки", expanded=True):
-        number_of_persons_analysis = st.slider(
-            "Количество персон для анализа", 
-            0, 100, 20, 
-            key="slider_num_persons_analysis"
-        )
-
-    with st.expander("Настройки фильтров (как при генерации)", expanded=True):
-        analysis_age_range = st.slider(
-            "Возраст", 
-            4, 100, (18, 60),
-            key="slider_age_range_analysis"
-        )
-        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-        analysis_income_selected = st.multiselect(
-            "Доход", 
-            options=income_options, 
-            default=income_options,
-            key="multiselect_income_analysis"
-        )
-
-        education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
-        analysis_education_selected = st.multiselect(
-            "Образование", 
-            options=education_options, 
-            default=education_options,
-            key="multiselect_edu_analysis"
-        )
-
-        all_regions = [
-            "Москва",
-            "Московская область",
-            "Санкт-Петербург",
-            "Новосибирская область",
-            "Свердловская область",
-            "Краснодарский край",
-            "Республика Татарстан",
-            "Челябинская область",
-            "Самарская область",
-            "Оренбургская область"
-        ]
-
-        st.markdown("##### Регион")
-        col_btn1, col_btn2 = st.columns(2)
-        if col_btn1.button("Выбрать все", key="select_all_regions_analysis"):
-            for region in all_regions:
-                st.session_state[f"analysis_region_{region}"] = True
-        if col_btn2.button("Снять все", key="deselect_all_regions_analysis"):
-            for region in all_regions:
-                st.session_state[f"analysis_region_{region}"] = False
-
-        local_selected_regions = []
-        for region in all_regions:
-            default = True if region in ["Москва", "Московская область"] else False
-            checked = st.checkbox(
-                region,
-                value=st.session_state.get(f"analysis_region_{region}", default),
-                key=f"checkbox_analysis_{region}"
-            )
-            if checked:
-                local_selected_regions.append(region)
-        analysis_selected_regions = local_selected_regions
-
-        st.markdown("##### Размер населенного пункта")
-        city_size_options = [
-            "До 100 0000 человек",
-            "От 100 000 до 500 000",
-            "От 500 000 до 1 000 000",
-            "Свыше 1 000 000"
-        ]
-        analysis_city_size_selected = st.multiselect(
-            "Размер города",
-            options=city_size_options,
-            default=city_size_options,
-            key="multiselect_city_size_analysis"
-        )
-
-        st.markdown("##### Семейное положение")
-        marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
-        analysis_marital_selected = st.multiselect(
-            "Семейное положение", 
-            options=marital_options, 
-            default=marital_options,
-            key="multiselect_marital_analysis"
-        )
-        analysis_children_count = st.slider(
-            "Количество детей", 
-            0, 5, (0, 3),
-            key="slider_children_count_analysis"
-        )
-        analysis_children_age = st.slider(
-            "Возраст детей", 
-            0, 18, (0, 18),
-            key="slider_children_age_analysis"
-        )
+    pass
 
 
 def main():
@@ -619,7 +465,6 @@ def main():
 
     with tab3:
         st.checkbox("Выводить отладочную информацию", key="debug")
-
 
 if __name__ == "__main__":
     main()
