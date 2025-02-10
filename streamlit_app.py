@@ -34,8 +34,14 @@ generation_id = ""
 number_of_persons = 20
 number_of_persons_analysis = 20
 
-analysis_age_range = (18, 60)\analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]\analysis_selected_regions = ["Москва", "Московская область"]\analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]\analysis_marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]\analysis_children_count = (0, 3)\analysis_children_age = (0, 18)
+analysis_age_range = (18, 60)
+analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
+analysis_selected_regions = ["Москва", "Московская область"]
+analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
+analysis_marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
+analysis_children_count = (0, 3)
+analysis_children_age = (0, 18)
 analysis_gender_selected = ["Мужской", "Женский"]  # добавляем фильтр по полу
 
 # -------------------
