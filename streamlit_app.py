@@ -420,11 +420,12 @@ def show_analysis_tab():
         for i, f in enumerate(uploaded_files):
             if i >= 10:
                 break
-            try:
-                content = f.read().decode("utf-8")
-            except:
-                content = "Не удалось декодировать файл в UTF-8"
-            final_files.append({"filename": f.name, "content": content})
+            content_bytes = f.read()
+            import base64
+            encoded = base64.b64encode(content_bytes).decode("utf-8")
+            mime_type = f.type if f.type else "application/octet-stream"
+            data_url = f"data:{mime_type};base64,{encoded}"
+            final_files.append({"filename": f.name, "content": data_url})
 
     st.session_state["analysis_uploaded_files"] = final_files
 
