@@ -362,38 +362,39 @@ def show_response_analysis_tab():
     
     with col_right:
         st.subheader("Анализ ответов")
-        
-        if selected_ad_name and selected_response_test_ids:
-            api = Api(st.secrets.AIRTABLE_API_TOKEN)
-            table = api.table(st.secrets.AIRTABLE_BASE_ID, "Responses")
-            formula = AND(
-                EQ(Field("Ad name"), selected_ad_name),
-                OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
-            )
-            response_records = table.all(formula=formula)
+        if st.button("Показать", key="show_responses_button"):
+            if selected_ad_name and selected_response_test_ids:
+                api = Api(st.secrets.AIRTABLE_API_TOKEN)
+                table = api.table(st.secrets.AIRTABLE_BASE_ID, "Responses")
+                formula = AND(
+                    EQ(Field("Ad name"), selected_ad_name),
+                    OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
+                )
+                response_records = table.all(formula=formula)
 
-            person_ids = list(itertools.chain.from_iterable(
-                record["fields"].get("Persona", []) if isinstance(record["fields"].get("Persona"), list) else [record["fields"].get("Persona")]
-                for record in response_records if "Persona" in record["fields"]
-            ))
-            person_ids = list(filter(None, person_ids))  # Убираем пустые значения
+                person_ids = list(itertools.chain.from_iterable(
+                    record["fields"].get("Persona", []) if isinstance(record["fields"].get("Persona"), list) else [record["fields"].get("Persona")]
+                    for record in response_records if "Persona" in record["fields"]
+                ))
+                person_ids = list(filter(None, person_ids))  # Убираем пустые значения
 
-            person_table = api.table(st.secrets.AIRTABLE_BASE_ID, "Personas")
-            person_records = person_table.all(formula=OR(*[EQ(Field("ID"), pid) for pid in person_ids]))
+                person_table = api.table(st.secrets.AIRTABLE_BASE_ID, "Personas")
+                person_records = person_table.all(formula=OR(*[EQ(Field("ID"), pid) for pid in person_ids]))
 
-            response_data = [
-                {"ID": r.get("id", ""), "Ad name": r["fields"].get("Ad name", ""), "Response": r["fields"].get("Response", "")}
-                for r in response_records
-            ]
-            st.write("Ответы:")
-            st.dataframe(response_data)
+                response_data = [
+                    {"ID": r.get("id", ""), "Ad name": r["fields"].get("Ad name", ""), "Response": r["fields"].get("Response", "")}
+                    for r in response_records
+                ]
+                st.write("Полная таблица ответов (Responses):")
+                st.dataframe(response_data)
 
-            person_data = [
-                {"ID": p.get("id", ""), "Name": p["fields"].get("Name", ""), "Age": p["fields"].get("Age", "")}
-                for p in person_records
-            ]
-            st.write("Персоны, давшие ответы:")
-            st.dataframe(person_data)
+                person_data = [
+                    {"ID": p.get("id", ""), "Name": p["fields"].get("Name", ""), "Age": p["fields"].get("Age", "")}
+                    for p in person_records
+                ]
+                st.write("Полная таблица персон (Personas), давших ответы:")
+                st.dataframe(person_data)
+
 
 
 def show_generation_tab():
