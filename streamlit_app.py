@@ -1,9 +1,3 @@
-"""
-Добавляем возможность редактировать system/user промты прямо на вкладках (генерация, анализ),
-если включен флаг отладки (debug). Тогда текст загружается из GitHub, заполняется в поля,
-и берётся при генерации/анализе из этих текстовых полей.
-"""
-
 import streamlit as st
 import json
 import datetime
@@ -17,6 +11,9 @@ from pyairtable.formulas import AND, OR, EQ, GTE, LTE, Field
 # Глобальные переменные
 # -------------------
 ad_description = ""
+audio_description = ""
+metadata_description = ""
+
 free_question = ""
 message = ""
 tags = ""
@@ -251,6 +248,8 @@ def analyze_ad():
     analysis_static = {
         "model_name": model_name,
         "ad_description": ad_description,
+        "audio_description": audio_description,
+        "metadata_description": metadata_description,
         "message": message,
         "free_question": free_question
     }
@@ -367,7 +366,7 @@ def show_generation_tab():
 
 
 def show_analysis_tab():
-    global number_of_persons_analysis, ad_description, message, free_question
+    global number_of_persons_analysis, ad_description, audio_description, metadata_description, message, free_question
 
     st.subheader("Отбор аудитории")
     if st.button("Отобрать персоны", key="select_persons_button"):
@@ -391,6 +390,8 @@ def show_analysis_tab():
     st.subheader("Анализ рекламы")
 
     ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
+    audio_description = st.text_input("Аудио описание", placeholder="Введите аудио описание рекламы", key="ad_audio_description_input")
+    metadata_description = st.text_input("Метаданные", placeholder="Введите метаданные рекламы", key="ad_metadata_description_input")
     message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки", key="ad_message_input")
     free_question = st.text_input(
         "Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне",
@@ -646,7 +647,6 @@ def show_filters_tab_analysis():
             0, 18, (0, 18),
             key="slider_children_age_analysis"
         )
-
 
 
 def main():
