@@ -371,7 +371,12 @@ def show_response_analysis_tab():
             )
             response_records = table.all(formula=formula)
 
-            person_ids = [record["fields"].get("Persona") for record in response_records if "Persona" in record["fields"]]
+            person_ids = list(itertools.chain.from_iterable(
+                record["fields"].get("Persona", []) if isinstance(record["fields"].get("Persona"), list) else [record["fields"].get("Persona")]
+                for record in response_records if "Persona" in record["fields"]
+            ))
+            person_ids = list(filter(None, person_ids))  # Убираем пустые значения
+
             person_table = api.table(st.secrets.AIRTABLE_BASE_ID, "Personas")
             person_records = person_table.all(formula=OR(*[EQ(Field("Record ID"), pid) for pid in person_ids]))
 
