@@ -38,7 +38,8 @@ generation_id = ""
 number_of_persons = 20
 number_of_persons_analysis = 20
 
-analysis_age_range = (18, 60)\analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+analysis_age_range = (18, 60)
+analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
 analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
 analysis_selected_regions = ["Москва", "Московская область"]
 analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
