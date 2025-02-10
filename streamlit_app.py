@@ -1,5 +1,6 @@
 """
-Исправлено дублирование slider, добавлены ключи (key="...") к каждому slider.
+1) Вынесен запрос к Airtable (all_records) в отдельную функцию.
+2) Добавлены фильтры по возрасту детей (children_age_1..5), чтобы соответствовать analysis_children_age.
 """
 
 import streamlit as st
@@ -55,6 +56,9 @@ analysis_children_age = (0, 18)
 # --------------------------------------------------
 
 def get_file_from_github(file_path: str) -> str:
+    """
+    Выгружает содержимое файла из GitHub (Raw) по токену.
+    """
     url = f"https://raw.githubusercontent.com/krolya/great_poc/main/{file_path}"
     headers = {"Authorization": f"Bearer {st.secrets.GITHUB_API_TOKEN}"}
     response = requests.get(url, headers=headers)
@@ -63,6 +67,9 @@ def get_file_from_github(file_path: str) -> str:
 
 
 def openai_chat(system_prompt: str, user_prompt: str) -> str:
+    """
+    Обертка для обращения к OpenAI API (2 сообщения: system + user)
+    """
     global model_name
 
     if "deepseek" not in model_name.lower():
@@ -92,6 +99,9 @@ def openai_chat(system_prompt: str, user_prompt: str) -> str:
 
 
 def upload_to_airtable(data, table_name="Personas") -> int:
+    """
+    Загрузка (JSON-строка) в Airtable
+    """
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
     st.info("Загружаем данные в Airtable...")
@@ -106,8 +116,13 @@ def upload_to_airtable(data, table_name="Personas") -> int:
 
 
 def fetch_analysis_records(formula: str, page_size=100, max_records=1000):
+    """
+    Функция для чтения записей из Airtable (таблица из настроек) с учётом formula.
+    Возвращает список (не генератор).
+    """
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     table = api.table(st.secrets.AIRTABLE_BASE_ID, st.secrets.AIRTABLE_TABLE_ID)
+    # table.all(...) вернёт список (все записи)
     all_records = table.all(
         page_size=page_size,
         max_records=max_records,
@@ -115,12 +130,22 @@ def fetch_analysis_records(formula: str, page_size=100, max_records=1000):
     )
     return all_records
 
-
 # --------------------------------------------------
 # Построение FORMULA для анализа
 # --------------------------------------------------
 
 def build_analysis_formula() -> str:
+    """
+    Формирует Airtable Formula, учитывая:
+    - Возраст (analysis_age_range)
+    - Доход (analysis_income_selected)
+    - Образование (analysis_education_selected)
+    - Регион (analysis_selected_regions)
+    - Размер города (analysis_city_size_selected)
+    - Семейное положение (analysis_marital_selected)
+    - Кол-во детей (analysis_children_count)
+    - Возраст детей (analysis_children_age) -- проверим поля Children age 1..5.
+    """
     conds = []
 
     # 1) Возраст: Age >= X AND Age <= Y
@@ -167,12 +192,26 @@ def build_analysis_formula() -> str:
     conds.append(LTE(Field("Children"), analysis_children_count[1]))
 
     # 8) Возраст детей
+    # Предположим, нужно чтобы все поля Children age i (1..5), если > 0,
+    # укладывались в analysis_children_age.
+    # Т.е. for each i in 1..5: if field > 0 -> field in [min, max].
+
     for i in range(1, 6):
         field_name = f"Children age {i}"
+        # Логика: если значение > 0, хотим age_min <= значение <= age_max.
+        # Cформируем AND( > 0, >= min, <= max ).
+        # Но чтобы объединить для всех, делаем conds.append(...)
+
+        # AND( OR(EQ(Field,0), (Field >= x AND Field <= y)) )
+        # => если 0 (нет ребёнка), это не дисквалифицирует.
+        # Иначе проверяем диапазон.
+
         child_in_range = AND(
             GTE(Field(field_name), analysis_children_age[0]),
             LTE(Field(field_name), analysis_children_age[1])
         )
+        # Если =0, пропускаем. Если >0, проверяем child_in_range.
+        # => OR(EQ(Field, 0), child_in_range)
         conds.append(
             OR(
                 EQ(Field(field_name), 0),
@@ -183,7 +222,6 @@ def build_analysis_formula() -> str:
     formula_obj = AND(*conds)
     return str(formula_obj)
 
-
 # -------------------
 # Логика генерации
 # -------------------
@@ -191,6 +229,7 @@ def generate_person():
     global generation_id
     generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
 
+    # Шаблоны
     system_prompt = get_file_from_github("person_generation_system.promt")
     person_prompt_template = get_file_from_github("person_generation.promt")
 
@@ -241,6 +280,7 @@ def analyze_ad():
     system_prompt = get_file_from_github("ad_analysis_system.promt")
     ad_analysis_template = get_file_from_github("ad_analysis.promt")
 
+    # Считываем файлы (макс 10)
     uploaded_files = st.session_state.get("analysis_uploaded_files", [])
     files_text = ""
     for fdict in uploaded_files:
@@ -248,6 +288,7 @@ def analyze_ad():
         content = fdict["content"]
         files_text += f"\n---\nФайл: {filename}\nСодержимое:\n{content}\n"
 
+    # Построим формулу и загрузим записи через отдельную функцию
     formula = build_analysis_formula()
     all_records = fetch_analysis_records(formula, page_size=100, max_records=1000)
 
@@ -303,6 +344,7 @@ def analyze_ad():
                 .replace("{free_question}", free_question)
             )
 
+            # Добавим файлы
             if files_text:
                 user_prompt += f"\n\nДополнительные файлы:{files_text}"
 
@@ -310,17 +352,22 @@ def analyze_ad():
                 st.info("Сформированный user_prompt для анализа рекламы")
                 st.write(user_prompt)
 
+            # Запрос
             generated_data = openai_chat(system_prompt, user_prompt)
 
             if st.session_state.debug:
                 st.info("Generated data:")
                 st.write(generated_data)
 
+            # Сохраняем
             upload_to_airtable(generated_data, "Responses")
 
     st.success("Анализ успешно завершен!")
 
 
+# -------------------
+# Отрисовка вкладок
+# -------------------
 def show_generation_tab():
     global number_of_persons, gender_ratio, age_range, income_selected, education_selected
     global selected_regions, city_size_selected, marital_selected, children_count, children_age, tags, model_name
@@ -337,11 +384,10 @@ def show_generation_tab():
             "o1",
             "o1-mini"
         ],
-        index=3,
-        key="model_select_generation"
+        index=3
     )
 
-    if st.button("Сгенерировать", key="generate_button"):
+    if st.button("Сгенерировать"):
         st.info("Генерация началась...")
         generate_person()
 
@@ -351,13 +397,13 @@ def show_analysis_tab():
 
     st.header("Анализ рекламы")
 
-    ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
-    message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки", key="ad_message_input")
+    ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы")
+    message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки")
     free_question = st.text_input(
-        "Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне", key="ad_freeq_input"
+        "Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне"
     )
 
-    uploaded_files = st.file_uploader("Добавить до 10 файлов", accept_multiple_files=True, key="analysis_uploader")
+    uploaded_files = st.file_uploader("Добавить до 10 файлов", accept_multiple_files=True)
 
     final_files = []
     if uploaded_files:
@@ -372,7 +418,7 @@ def show_analysis_tab():
 
     st.session_state["analysis_uploaded_files"] = final_files
 
-    if st.button("Анализировать", key="analyze_button"):
+    if st.button("Анализировать"):
         st.info("Анализ начался...")
         analyze_ad()
 
@@ -384,16 +430,16 @@ def show_filters_tab_generation():
     st.header("Целевая аудитория")
 
     with st.expander("Основные настройки", expanded=True):
-        number_of_persons = st.slider("Количество персон для генерации", 0, 100, 20, key="slider_num_persons_gen")
-        gender_ratio = st.slider("Процент мужчин в выборке (%)", 0, 100, 50, key="slider_gender_ratio_gen")
-        age_range = st.slider("Возраст", 4, 100, (18, 60), key="slider_age_range_gen")
+        number_of_persons = st.slider("Количество персон для генерации", min_value=0, max_value=100, value=20)
+        gender_ratio = st.slider("Процент мужчин в выборке (%)", min_value=0, max_value=100, value=50)
+        age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
         income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-        income_selected = st.multiselect("Выберите группу доходов", income_options, default=income_options, key="multiselect_income_gen")
+        income_selected = st.multiselect("Выберите группу доходов", options=income_options, default=income_options)
 
     with st.expander("Образование", expanded=True):
         education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
         education_selected = st.multiselect(
-            "Выберите образование", education_options, default=education_options, key="multiselect_edu_gen"
+            "Выберите образование", options=education_options, default=education_options
         )
 
     all_regions = [
@@ -418,17 +464,16 @@ def show_filters_tab_generation():
             for region in all_regions:
                 st.session_state[f"region_{region}"] = False
 
-        temp_selected = []
+        selected_regions = []
         for region in all_regions:
             default = True if region in ["Москва", "Московская область"] else False
             checked = st.checkbox(
                 region,
                 value=st.session_state.get(f"region_{region}", default),
-                key=f"checkbox_gen_{region}"
+                key=f"region_{region}"
             )
             if checked:
-                temp_selected.append(region)
-        selected_regions = temp_selected
+                selected_regions.append(region)
 
         st.markdown("#### Размер населенного пункта")
         city_size_options = [
@@ -439,21 +484,19 @@ def show_filters_tab_generation():
         ]
         city_size_selected = st.multiselect(
             "Выберите размер населенного пункта", 
-            city_size_options,
-            default=city_size_options,
-            key="multiselect_city_size_gen"
+            options=city_size_options,
+            default=city_size_options
         )
 
     with st.expander("Семейное положение", expanded=True):
         marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
         marital_selected = st.multiselect(
-            "Выберите семейное положение", marital_options, default=marital_options,
-            key="multiselect_marital_gen"
+            "Выберите семейное положение", options=marital_options, default=marital_options
         )
-        children_count = st.slider("Количество детей", 0, 5, (0, 3), key="slider_children_count_gen")
-        children_age = st.slider("Возраст детей", 0, 18, (0, 18), key="slider_children_age_gen")
+        children_count = st.slider("Количество детей", min_value=0, max_value=5, value=(0, 3))
+        children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
 
-    tags = st.text_input("Тэги", "", key="tags_gen")
+    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую")
 
 
 def show_filters_tab_analysis():
@@ -465,18 +508,17 @@ def show_filters_tab_analysis():
     st.header("Фильтры")
     with st.expander("Основные настройки", expanded=True):
         number_of_persons_analysis = st.slider(
-            "Количество персон для анализа", 0, 100, 20, key="slider_num_persons_analysis"
+            "Количество персон для анализа", min_value=0, max_value=100, value=20
         )
 
     with st.expander("Настройки фильтров (как при генерации)", expanded=True):
-        analysis_age_range = st.slider("Возраст", 4, 100, (18, 60), key="slider_age_range_analysis")
+        analysis_age_range = st.slider("Возраст", min_value=4, max_value=100, value=(18, 60))
         income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-        analysis_income_selected = st.multiselect("Доход", income_options, default=income_options, key="multiselect_income_analysis")
+        analysis_income_selected = st.multiselect("Доход", options=income_options, default=income_options)
 
         education_options = ["Среднее", "Неоконченное высшее", "Высшее"]
         analysis_education_selected = st.multiselect(
-            "Образование", education_options, default=education_options,
-            key="multiselect_edu_analysis"
+            "Образование", options=education_options, default=education_options
         )
 
         all_regions = [
@@ -507,7 +549,7 @@ def show_filters_tab_analysis():
             checked = st.checkbox(
                 region,
                 value=st.session_state.get(f"analysis_region_{region}", default),
-                key=f"checkbox_analysis_{region}"
+                key=f"analysis_region_{region}"
             )
             if checked:
                 local_selected_regions.append(region)
@@ -522,19 +564,17 @@ def show_filters_tab_analysis():
         ]
         analysis_city_size_selected = st.multiselect(
             "Размер города",
-            city_size_options,
-            default=city_size_options,
-            key="multiselect_city_size_analysis"
+            options=city_size_options,
+            default=city_size_options
         )
 
         st.markdown("##### Семейное положение")
         marital_options = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
         analysis_marital_selected = st.multiselect(
-            "Семейное положение", marital_options, default=marital_options,
-            key="multiselect_marital_analysis"
+            "Семейное положение", options=marital_options, default=marital_options
         )
-        analysis_children_count = st.slider("Количество детей", 0, 5, (0, 3), key="slider_children_count_analysis")
-        analysis_children_age = st.slider("Возраст детей", 0, 18, (0, 18), key="slider_children_age_analysis")
+        analysis_children_count = st.slider("Количество детей", min_value=0, max_value=5, value=(0, 3))
+        analysis_children_age = st.slider("Возраст детей", min_value=0, max_value=18, value=(0, 18))
 
 
 # -------------------
