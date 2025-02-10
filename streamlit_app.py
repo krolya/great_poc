@@ -379,7 +379,7 @@ def show_response_analysis_tab():
             person_ids = list(filter(None, person_ids))  # Убираем пустые значения
 
             person_table = api.table(st.secrets.AIRTABLE_BASE_ID, "Personas")
-            person_records = person_table.all(formula=OR(*[EQ(Field("Record ID"), pid) for pid in person_ids]))
+            person_records = person_table.all(formula=OR(*[EQ(Field("ID"), pid) for pid in person_ids]))
 
             response_data = [
                 {"ID": r.get("id", ""), "Ad name": r["fields"].get("Ad name", ""), "Response": r["fields"].get("Response", "")}
