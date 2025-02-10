@@ -10,6 +10,7 @@ from pyairtable.formulas import AND, OR, EQ, GTE, LTE, Field
 # -------------------
 # Глобальные переменные
 # -------------------
+ad_name = ""  # добавляем новую переменную для Ad name
 ad_description = ""
 audio_description = ""
 metadata_description = ""
@@ -33,14 +34,9 @@ generation_id = ""
 number_of_persons = 20
 number_of_persons_analysis = 20
 
-analysis_age_range = (18, 60)
-analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
-analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]
-analysis_selected_regions = ["Москва", "Московская область"]
-analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]
-analysis_marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]
-analysis_children_count = (0, 3)
-analysis_children_age = (0, 18)
+analysis_age_range = (18, 60)\analysis_income_selected = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+analysis_education_selected = ["Среднее", "Неоконченное высшее", "Высшее"]\analysis_selected_regions = ["Москва", "Московская область"]\analysis_city_size_selected = ["До 100 0000 человек", "От 100 000 до 500 000", "От 500 000 до 1 000 000", "Свыше 1 000 000"]\analysis_marital_selected = ["В браке", "Разведен(-а)", "В отношениях", "Одинок (-а)"]\analysis_children_count = (0, 3)\analysis_children_age = (0, 18)
+analysis_gender_selected = ["Мужской", "Женский"]  # добавляем фильтр по полу
 
 # -------------------
 # Функция загрузки файла из GitHub
@@ -150,6 +146,13 @@ def build_analysis_formula() -> str:
             sub_conds.append(EQ(Field("City size"), city_val))
         conds.append(OR(*sub_conds))
 
+    # Добавляем условие по полу
+    if analysis_gender_selected:
+        sub_conds = []
+        for g_val in analysis_gender_selected:
+            sub_conds.append(EQ(Field("Gender"), g_val))
+        conds.append(OR(*sub_conds))
+
     if analysis_marital_selected:
         sub_conds = []
         for m_val in analysis_marital_selected:
@@ -247,6 +250,7 @@ def analyze_ad():
 
     analysis_static = {
         "model_name": model_name,
+        "ad_name": ad_name,  # добавляем ad_name в placeholder
         "ad_description": ad_description,
         "audio_description": audio_description,
         "metadata_description": metadata_description,
@@ -366,7 +370,7 @@ def show_generation_tab():
 
 
 def show_analysis_tab():
-    global number_of_persons_analysis, ad_description, audio_description, metadata_description, message, free_question
+    global number_of_persons_analysis, ad_name, ad_description, audio_description, metadata_description, message, free_question
 
     st.subheader("Отбор аудитории")
     if st.button("Отобрать персоны", key="select_persons_button"):
@@ -389,6 +393,7 @@ def show_analysis_tab():
 
     st.subheader("Анализ рекламы")
 
+    ad_name = st.text_input("Название рекламы", placeholder="Введите название рекламы", key="ad_name_input")  # новое поле
     ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
     audio_description = st.text_input("Аудио описание", placeholder="Введите аудио описание рекламы", key="ad_audio_description_input")
     metadata_description = st.text_input("Метаданные", placeholder="Введите метаданные рекламы", key="ad_metadata_description_input")
@@ -433,7 +438,6 @@ def show_analysis_tab():
     if st.button("Анализировать", key="analyze_button"):
         st.info("Анализ начался...")
         analyze_ad()
-
 
 
 def show_filters_tab_generation():
@@ -549,7 +553,7 @@ def show_filters_tab_analysis():
     global number_of_persons_analysis
     global analysis_age_range, analysis_income_selected, analysis_education_selected
     global analysis_selected_regions, analysis_city_size_selected, analysis_marital_selected
-    global analysis_children_count, analysis_children_age
+    global analysis_children_count, analysis_children_age, analysis_gender_selected
 
     st.header("Фильтры")
     with st.expander("Основные настройки", expanded=True):
@@ -627,6 +631,15 @@ def show_filters_tab_analysis():
             options=city_size_options,
             default=city_size_options,
             key="multiselect_city_size_analysis"
+        )
+
+        st.markdown("##### Пол")
+        gender_options = ["Мужской", "Женский"]
+        analysis_gender_selected = st.multiselect(
+            "Пол",
+            options=gender_options,
+            default=gender_options,
+            key="multiselect_gender_analysis"
         )
 
         st.markdown("##### Семейное положение")
