@@ -342,27 +342,29 @@ def fetch_airtable_records(table_name: str, formula) -> list:
     return table.all(formula=formula)
 
 def display_responses(selected_ad_name, selected_response_test_ids):
-    # Проверяем, выбраны ли фильтры
+    """
+    Отображаем ответы по выбранному Ad name и списку response_test_ids.
+    Если ответы ещё не загружены в сессию, делаем запрос.
+    Иначе берём из st.session_state.
+    """
+
     if not selected_ad_name or not selected_response_test_ids:
         st.error("Пожалуйста, выберите название рекламы и тестовые ID ответа")
         return
 
-    # Загружаем записи только один раз, при нажатии кнопки "Показать".
-    # Допустим, у вас в show_response_analysis_tab() есть логика:
-    # if st.button("Показать"):
-    #     display_responses(selected_ad_name, selected_response_test_ids)
-    # Тогда сюда мы заходим при каждом реруне, 
-    # но можем проверить, есть ли данные уже в session_state.
-    # Если нужно всегда обновлять — этот кусок можно убрать,
-    # тогда будет грузить при каждом нажатии кнопки «Показать».
-    if "response_data" not in st.session_state:
-        # Реальный запрос к Airtable
-        response_records = fetch_airtable_records("Responses", AND(
+    # Проверяем, загружали ли мы уже ответы для текущего набора фильтров
+    # Чтобы различать наборы фильтров, можно завести ключ вида ("response_data", selected_ad_name, tuple(selected_response_test_ids))
+    filter_key = f"resp_data_{selected_ad_name}_{','.join(sorted(selected_response_test_ids))}"
+
+    # Если уже есть данные в сессии для этих же фильтров, берём их
+    # Иначе делаем запрос и сохраняем
+    if filter_key not in st.session_state:
+        responses_formula = AND(
             EQ(Field("Ad name"), selected_ad_name),
             OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
-        ))
+        )
+        response_records = fetch_airtable_records("Responses", responses_formula)
 
-        # Формируем данные для вывода
         response_data = []
         for r in response_records:
             fields = r.get("fields", {})
@@ -390,38 +392,41 @@ def display_responses(selected_ad_name, selected_response_test_ids):
             }
             response_data.append(response_entry)
 
-        # Сохраняем загруженные данные в session_state
-        st.session_state["response_data"] = response_data
-        # Ставим начальный индекс 0
-        st.session_state["current_response_index"] = 0
+        # Сохраняем результат в session_state для этих фильтров
+        st.session_state[filter_key] = response_data
 
-    # Если всё ещё нет данных, значит, в таблице просто пусто
-    if not st.session_state.get("response_data"):
-        st.warning("Нет данных для отображения.")
+        # Сбросим индекс (чтобы начинать с первого ответа)
+        st.session_state["current_response_index"] = 0
+    else:
+        response_data = st.session_state[filter_key]
+
+    # Если пусто, выводим предупреждение
+    if not response_data:
+        st.warning("Нет данных по этим фильтрам.")
         return
 
-    # Точно есть данные, выводим таблицу
-    response_data = st.session_state["response_data"]
-    with st.expander("Показать таблицу ответов", expanded=True):
+    # Показ таблицы ответов
+    with st.expander("Показать таблицу ответов"):
         num_rows = len(response_data)
-        row_height = 30    # примерная высота одной строки
-        header_height = 40 # высота заголовка
+        row_height = 30
+        header_height = 40
         total_height = max(num_rows, 10) * row_height + header_height
         st.dataframe(response_data, height=total_height)
 
-    # Готовим навигацию
+    # Устанавливаем индекс, если его ещё нет
     if "current_response_index" not in st.session_state:
-        st.session_state.current_response_index = 0
+        st.session_state["current_response_index"] = 0
 
     nav_placeholder = st.empty()
     detail_placeholder = st.empty()
 
+    # Функция для обновления текущего ответа
     def update_response(delta):
         st.session_state.current_response_index = (
             st.session_state.current_response_index + delta
         ) % len(response_data)
 
-    # Создаём кнопки навигации
+    # Панель навигации
     nav_cols = nav_placeholder.columns([1, 2, 1])
     nav_cols[0].button(
         "⬅️ Предыдущий",
@@ -439,8 +444,9 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         key="next_btn"
     )
 
-    # Рисуем детальную информацию об ответе
-    current_response = response_data[st.session_state.current_response_index]
+    # Рисуем выбранный ответ
+    current_index = st.session_state.current_response_index
+    current_response = response_data[current_index]
     details_html = f"""
     <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
       <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
@@ -453,6 +459,7 @@ def display_responses(selected_ad_name, selected_response_test_ids):
     </div>
     """
     detail_placeholder.markdown(details_html, unsafe_allow_html=True)
+
 
 # -------------------
 # Функция получения данных из Airtable
