@@ -399,19 +399,17 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         # Контейнер для навигационных кнопок
         nav_col1, nav_col2, nav_col3 = st.columns([1, 2, 1])
         
-        # Используем selectbox вместо кнопок для навигации
-        current_index = st.session_state.current_response_index
-        total_responses = len(response_data)
-        
+        # Создаем кнопки "Предыдущий" и "Следующий"
+        with nav_col1:
+            if st.button("⬅️ Предыдущий"):
+                st.session_state.current_response_index = (st.session_state.current_response_index - 1) % len(response_data)
+                
         with nav_col2:
-            selected_index = st.selectbox(
-                "Выберите ответ",
-                range(total_responses),
-                format_func=lambda x: f"Ответ {x + 1} из {total_responses}",
-                index=current_index
-            )
-            # Обновляем индекс без перезагрузки
-            st.session_state.current_response_index = selected_index
+            st.write(f"Ответ {st.session_state.current_response_index + 1} из {len(response_data)}")
+            
+        with nav_col3:
+            if st.button("Следующий ➡️"):
+                st.session_state.current_response_index = (st.session_state.current_response_index + 1) % len(response_data)
 
         # Получаем текущий ответ из списка
         current_response = response_data[st.session_state.current_response_index]
