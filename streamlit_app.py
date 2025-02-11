@@ -561,7 +561,7 @@ def show_analysis_tab():
         for r in records:
             fields = r.get("fields", {})
             # Формируем запись, включающую ID и все поля из записи
-            record_data = {"ID": r.get("id", "")}
+            record_data = {"Record ID": r.get("id", "")}
             record_data.update(fields)
             data_for_table.append(record_data)
         st.write(f"Найдено {len(data_for_table)} персон:")
