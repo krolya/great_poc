@@ -342,99 +342,117 @@ def fetch_airtable_records(table_name: str, formula) -> list:
     return table.all(formula=formula)
 
 def display_responses(selected_ad_name, selected_response_test_ids):
+    # Проверяем, выбраны ли фильтры
     if not selected_ad_name or not selected_response_test_ids:
         st.error("Пожалуйста, выберите название рекламы и тестовые ID ответа")
         return
 
-    # Получаем записи из таблицы Responses по выбранным фильтрам
-    responses_formula = AND(
-        EQ(Field("Ad name"), selected_ad_name),
-        OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
-    )
-    response_records = fetch_airtable_records("Responses", responses_formula)
+    # Загружаем записи только один раз, при нажатии кнопки "Показать".
+    # Допустим, у вас в show_response_analysis_tab() есть логика:
+    # if st.button("Показать"):
+    #     display_responses(selected_ad_name, selected_response_test_ids)
+    # Тогда сюда мы заходим при каждом реруне, 
+    # но можем проверить, есть ли данные уже в session_state.
+    # Если нужно всегда обновлять — этот кусок можно убрать,
+    # тогда будет грузить при каждом нажатии кнопки «Показать».
+    if "response_data" not in st.session_state:
+        # Реальный запрос к Airtable
+        response_records = fetch_airtable_records("Responses", AND(
+            EQ(Field("Ad name"), selected_ad_name),
+            OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
+        ))
 
-    # Формируем итоговую таблицу, используя новую lookup колонку "Persona description"
-    response_data = []
-    for r in response_records:
-        fields = r.get("fields", {})
-        # Если lookup колонка возвращает список, объединяем его через "; "
-        persona_description = fields.get("Persona description", "")
-        if isinstance(persona_description, list):
-            persona_description = "; ".join(persona_description)
+        # Формируем данные для вывода
+        response_data = []
+        for r in response_records:
+            fields = r.get("fields", {})
+            persona_description = fields.get("Persona description", "")
+            if isinstance(persona_description, list):
+                persona_description = "; ".join(persona_description)
 
-        response_entry = {
-            "ID": r.get("id", ""),
-            "Ad name": fields.get("Ad name", ""),
-            "Response": fields.get("Response", ""),
-            "Response clarity score": fields.get("Response clarity score", 0),
-            "Response clarity description": fields.get("Response clarity description", ""),
-            "Response likeability score": fields.get("Response likeability score", 0),
-            "Response likeability description": fields.get("Response likeability description", ""),
-            "Response trust score": fields.get("Response trust score", 0),
-            "Response trust description": fields.get("Response trust description", ""),
-            "Response diversity score": fields.get("Response diversity score", 0),
-            "Response diversity description": fields.get("Response diversity description", ""),
-            "Response message score": fields.get("Response message score", 0),
-            "Response message description": fields.get("Response message description", ""),
-            "Response free question 1": fields.get("Response free question 1", ""),
-            "Response description": fields.get("Response description", ""),
-            "Persona description": persona_description  # Новая колонка с описанием персоны
-        }
-        response_data.append(response_entry)
+            response_entry = {
+                "ID": r.get("id", ""),
+                "Ad name": fields.get("Ad name", ""),
+                "Response": fields.get("Response", ""),
+                "Response clarity score": fields.get("Response clarity score", 0),
+                "Response clarity description": fields.get("Response clarity description", ""),
+                "Response likeability score": fields.get("Response likeability score", 0),
+                "Response likeability description": fields.get("Response likeability description", ""),
+                "Response trust score": fields.get("Response trust score", 0),
+                "Response trust description": fields.get("Response trust description", ""),
+                "Response diversity score": fields.get("Response diversity score", 0),
+                "Response diversity description": fields.get("Response diversity description", ""),
+                "Response message score": fields.get("Response message score", 0),
+                "Response message description": fields.get("Response message description", ""),
+                "Response free question 1": fields.get("Response free question 1", ""),
+                "Response description": fields.get("Response description", ""),
+                "Persona description": persona_description
+            }
+            response_data.append(response_entry)
 
-    # Вывод таблицы ответов под expander
-    with st.expander("Показать таблицу ответов"):
+        # Сохраняем загруженные данные в session_state
+        st.session_state["response_data"] = response_data
+        # Ставим начальный индекс 0
+        st.session_state["current_response_index"] = 0
+
+    # Если всё ещё нет данных, значит, в таблице просто пусто
+    if not st.session_state.get("response_data"):
+        st.warning("Нет данных для отображения.")
+        return
+
+    # Точно есть данные, выводим таблицу
+    response_data = st.session_state["response_data"]
+    with st.expander("Показать таблицу ответов", expanded=True):
         num_rows = len(response_data)
-        row_height = 30    # примерная высота одной строки в пикселях
+        row_height = 30    # примерная высота одной строки
         header_height = 40 # высота заголовка
         total_height = max(num_rows, 10) * row_height + header_height
         st.dataframe(response_data, height=total_height)
 
-    if response_data:
-        if "current_response_index" not in st.session_state:
-            st.session_state.current_response_index = 0
+    # Готовим навигацию
+    if "current_response_index" not in st.session_state:
+        st.session_state.current_response_index = 0
 
-        # Создаем контейнеры для навигации и детального отображения ответа
-        nav_placeholder = st.empty()
-        detail_placeholder = st.empty()
+    nav_placeholder = st.empty()
+    detail_placeholder = st.empty()
 
-        # Функция обновления отображаемого ответа без дополнительной перезагрузки страницы
-        def update_response(delta):
-            st.session_state.current_response_index = (st.session_state.current_response_index + delta) % len(response_data)
-            current_response = response_data[st.session_state.current_response_index]
-            details_html = f"""
-            <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
-              <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
-              <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
-              <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
-              <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
-              <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
-              <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
-              <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
-            </div>
-            """
-            detail_placeholder.markdown(details_html, unsafe_allow_html=True)
+    def update_response(delta):
+        st.session_state.current_response_index = (
+            st.session_state.current_response_index + delta
+        ) % len(response_data)
 
-        # Размещаем кнопки навигации с привязкой к callback-функции
-        nav_cols = nav_placeholder.columns([1, 2, 1])
-        nav_cols[0].button("⬅️ Предыдущий", on_click=update_response, args=(-1,), key="prev_btn")
-        nav_cols[1].write(f"Ответ {st.session_state.current_response_index + 1} из {len(response_data)}")
-        nav_cols[2].button("Следующий ➡️", on_click=update_response, args=(1,), key="next_btn")
+    # Создаём кнопки навигации
+    nav_cols = nav_placeholder.columns([1, 2, 1])
+    nav_cols[0].button(
+        "⬅️ Предыдущий",
+        on_click=update_response,
+        args=(-1,),
+        key="prev_btn"
+    )
+    nav_cols[1].write(
+        f"Ответ {st.session_state.current_response_index + 1} из {len(response_data)}"
+    )
+    nav_cols[2].button(
+        "Следующий ➡️",
+        on_click=update_response,
+        args=(1,),
+        key="next_btn"
+    )
 
-        # Отображаем текущий ответ напрямую, чтобы избежать дополнительного вызова update_response(0)
-        current_response = response_data[st.session_state.current_response_index]
-        details_html = f"""
-        <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
-          <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
-          <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
-          <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
-          <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
-          <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
-          <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
-          <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
-        </div>
-        """
-        detail_placeholder.markdown(details_html, unsafe_allow_html=True)
+    # Рисуем детальную информацию об ответе
+    current_response = response_data[st.session_state.current_response_index]
+    details_html = f"""
+    <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
+      <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
+      <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
+      <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
+      <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
+      <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
+      <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
+      <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
+    </div>
+    """
+    detail_placeholder.markdown(details_html, unsafe_allow_html=True)
 
 # -------------------
 # Функция получения данных из Airtable
