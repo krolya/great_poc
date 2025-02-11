@@ -341,34 +341,6 @@ def fetch_airtable_records(table_name: str, formula) -> list:
     table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
     return table.all(formula=formula)
 
-# -------------------
-# Функция для вычисления статистики по параметрам ответа
-# -------------------
-def compute_response_statistics(response_data):
-    if not response_data:
-        return None
-    
-    response_scores = {
-        "Понятность": "Response clarity score",
-        "Лайкабилити": "Response likeability score",
-        "Доверие": "Response trust score",
-        "Отличие": "Response diversity score",
-        "Месседж": "Response message score"
-    }
-    
-    statistics = []
-    for param_name, field_key in response_scores.items():
-        scores = [r.get(field_key, 0) for r in response_data if field_key in r]
-        if scores:
-            statistics.append({
-                "Параметр ответа": param_name,
-                "Минимальный скор": min(scores),
-                "Среднее значение": sum(scores) / len(scores),
-                "Максимальный скор": max(scores)
-            })
-    
-    return pd.DataFrame(statistics)
-
 def display_responses(selected_ad_name, selected_response_test_ids):
     """
     Отображаем ответы по выбранному Ad name и списку response_test_ids.
@@ -488,10 +460,6 @@ def display_responses(selected_ad_name, selected_response_test_ids):
     """
     detail_placeholder.markdown(details_html, unsafe_allow_html=True)
 
-    st.subheader("Статистика ответов")
-    stats_df = compute_response_statistics(response_data)
-    if stats_df is not None:
-        st.dataframe(stats_df)
 
 # -------------------
 # Функция получения данных из Airtable
