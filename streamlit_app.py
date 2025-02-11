@@ -365,8 +365,10 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         st.write(person_ids)
 
     # Получаем записи из таблицы Personas
-    personas_formula = OR(*[EQ(Field("ID"), pid) for pid in person_ids])
-    person_records = fetch_airtable_records("Personas", personas_formula)
+    personas_table = Api(st.secrets.AIRTABLE_API_TOKEN).table(st.secrets.AIRTABLE_BASE_ID, "Personas")
+    person_records = personas_table.all(
+        formula=OR(*[EQ(Field("RECORD_ID()"), pid) for pid in person_ids])
+    )
 
     response_data = [
         {
