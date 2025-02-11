@@ -346,76 +346,56 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         st.error("Пожалуйста, выберите название рекламы и тестовые ID ответа")
         return
 
-    # Получаем записи из таблицы Responses
+    # Получаем записи из таблицы Responses по выбранным фильтрам
     responses_formula = AND(
         EQ(Field("Ad name"), selected_ad_name),
         OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
     )
     response_records = fetch_airtable_records("Responses", responses_formula)
 
-    # Извлекаем ID персон из ответов
-    person_ids = list(itertools.chain.from_iterable(
-        record["fields"].get("Persona", [])
-        if isinstance(record["fields"].get("Persona"), list)
-        else [record["fields"].get("Persona")]
-        for record in response_records if "Persona" in record["fields"]
-    ))
-    person_ids = list(filter(None, person_ids))  # Убираем пустые значения
+    # Формируем итоговую таблицу, используя новую lookup колонку "Persona description"
+    response_data = []
+    for r in response_records:
+        fields = r.get("fields", {})
+        # Если lookup колонка возвращает список, объединяем его через "; "
+        persona_description = fields.get("Persona description", "")
+        if isinstance(persona_description, list):
+            persona_description = "; ".join(persona_description)
 
-    if st.session_state.debug:
-        st.write("Получили следующие идентификаторы персон:", person_ids)
-
-    # Формируем формулу для таблицы Personas вручную с вызовом RECORD_ID()
-    person_records = []
-    if person_ids:
-        formula_str = "OR(" + ",".join([f"RECORD_ID() = '{pid}'" for pid in person_ids]) + ")"
-        personas_table = Api(st.secrets.AIRTABLE_API_TOKEN).table(st.secrets.AIRTABLE_BASE_ID, "Personas")
-        person_records = personas_table.all(formula=formula_str)
-    
-    # Выводим данные таблицы ответов
-    response_data = [
-        {
+        response_entry = {
             "ID": r.get("id", ""),
-            "Ad name": r["fields"].get("Ad name", ""),
-            "Response": r["fields"].get("Response", ""),
-            "Response clarity score": r["fields"].get("Response clarity score", 0),
-            "Response clarity description": r["fields"].get("Response clarity description", ""),
-            "Response likeability score": r["fields"].get("Response likeability score", 0),
-            "Response likeability description": r["fields"].get("Response likeability description", ""),
-            "Response trust score": r["fields"].get("Response trust score", 0),
-            "Response trust description": r["fields"].get("Response trust description", ""),
-            "Response diversity score": r["fields"].get("Response diversity score", 0),
-            "Response diversity description": r["fields"].get("Response diversity description", ""),
-            "Response message score": r["fields"].get("Response message score", 0),
-            "Response message description": r["fields"].get("Response message description", ""),
-            "Response free question 1": r["fields"].get("Response free question 1", ""),
-            "Response description": r["fields"].get("Response description", "")
+            "Ad name": fields.get("Ad name", ""),
+            "Response": fields.get("Response", ""),
+            "Response clarity score": fields.get("Response clarity score", 0),
+            "Response clarity description": fields.get("Response clarity description", ""),
+            "Response likeability score": fields.get("Response likeability score", 0),
+            "Response likeability description": fields.get("Response likeability description", ""),
+            "Response trust score": fields.get("Response trust score", 0),
+            "Response trust description": fields.get("Response trust description", ""),
+            "Response diversity score": fields.get("Response diversity score", 0),
+            "Response diversity description": fields.get("Response diversity description", ""),
+            "Response message score": fields.get("Response message score", 0),
+            "Response message description": fields.get("Response message description", ""),
+            "Response free question 1": fields.get("Response free question 1", ""),
+            "Response description": fields.get("Response description", ""),
+            "Persona description": persona_description  # Новая колонка с описанием персоны
         }
-        for r in response_records
-    ]
-    st.write("Полная таблица ответов (Responses):")
-    st.dataframe(response_data)
+        response_data.append(response_entry)
 
-    person_data = [
-        {
-            "ID": p.get("id", ""),
-            "Name": p["fields"].get("Name", ""),
-            "Gender": p["fields"].get("Gender", ""),
-            "Marital status": p["fields"].get("Marital status", ""),
-            "Income": p["fields"].get("Income", ""),
-            "Age": p["fields"].get("Age", ""),
-            "Children": p["fields"].get("Children", 0),
-            "Region": p["fields"].get("Region", ""),
-            "City size": p["fields"].get("City size", ""),
-            "Education": p["fields"].get("Education", ""),
-            "Generation ID": p["fields"].get("Generation ID", ""),
-            "Generation model": p["fields"].get("Generation model", ""),
-            "Description": p["fields"].get("Description", "")
-        }
-        for p in person_records
-    ]
-    st.write("Полная таблица персон (Personas), давших ответы:")
-    st.dataframe(person_data)
+    st.write("Полная таблица ответов с описанием персон:")
+
+    # Рассчитываем высоту dataframe: минимум 10 строк
+    num_rows = len(response_data)
+    row_height = 30    # примерная высота одной строки в пикселях
+    header_height = 40 # высота заголовка
+    total_height = max(num_rows, 10) * row_height + header_height
+
+    st.dataframe(response_data, height=total_height)
+
+    # Закомментирован вывод таблицы персон (запрос и отображение записей из таблицы Personas больше не требуется)
+    # persona_data = [...]
+    # st.write("Полная таблица персон (Personas), давших ответы:")
+    # st.dataframe(persona_data)
 
 # -------------------
 # Функция получения данных из Airtable
