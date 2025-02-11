@@ -390,43 +390,39 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         total_height = max(num_rows, 10) * row_height + header_height
         st.dataframe(response_data, height=total_height)
 
-    # Если есть хотя бы один ответ, показываем детальный просмотр с навигацией
     if response_data:
-        # Инициализируем индекс текущего ответа в session_state, если его ещё нет
         if "current_response_index" not in st.session_state:
             st.session_state.current_response_index = 0
 
-        # Контейнер для навигационных кнопок
-        nav_col1, nav_col2, nav_col3 = st.columns([1, 2, 1])
-        
-        # Создаем кнопки "Предыдущий" и "Следующий"
-        with nav_col1:
-            if st.button("⬅️ Предыдущий"):
-                st.session_state.current_response_index = (st.session_state.current_response_index - 1) % len(response_data)
-                
-        with nav_col2:
-            st.write(f"Ответ {st.session_state.current_response_index + 1} из {len(response_data)}")
-            
-        with nav_col3:
-            if st.button("Следующий ➡️"):
-                st.session_state.current_response_index = (st.session_state.current_response_index + 1) % len(response_data)
+        # Создаем контейнеры-заполнители, чтобы обновлять раздел с навигацией и детальным ответом отдельно
+        nav_placeholder = st.empty()
+        detail_placeholder = st.empty()
 
-        # Получаем текущий ответ из списка
-        current_response = response_data[st.session_state.current_response_index]
+        # Функция для обновления отображаемого ответа без полной перезагрузки страницы
+        def update_response(delta):
+            st.session_state.current_response_index = (st.session_state.current_response_index + delta) % len(response_data)
+            current_response = response_data[st.session_state.current_response_index]
+            details_html = f"""
+            <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
+              <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
+              <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
+              <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
+              <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
+              <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
+              <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
+              <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
+            </div>
+            """
+            detail_placeholder.markdown(details_html, unsafe_allow_html=True)
 
-        # Формируем HTML-разметку для рамки с детальным ответом
-        details_html = f"""
-        <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
-          <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
-          <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
-          <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
-          <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
-          <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
-          <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
-          <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
-        </div>
-        """
-        st.markdown(details_html, unsafe_allow_html=True)
+        # Размещаем кнопки навигации с привязкой callback-функции для обновления индекса ответа
+        nav_cols = nav_placeholder.columns([1, 2, 1])
+        nav_cols[0].button("⬅️ Предыдущий", on_click=update_response, args=(-1,))
+        nav_cols[1].write(f"Ответ {st.session_state.current_response_index + 1} из {len(response_data)}")
+        nav_cols[2].button("Следующий ➡️", on_click=update_response, args=(1,))
+
+        # Отображаем текущий ответ
+        update_response(0)
 
 # -------------------
 # Функция получения данных из Airtable
