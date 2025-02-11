@@ -559,22 +559,16 @@ def show_analysis_tab():
         records = fetch_analysis_records(formula, page_size=100, max_records=1000)
         data_for_table = []
         for r in records:
-            fields = r["fields"]
-            data_for_table.append({
-                "ID": r.get("id", ""),
-                "Имя": fields.get("Name", ""),
-                "Возраст": fields.get("Age", 0),
-                "Регион": fields.get("Region", ""),
-                "Доход": fields.get("Income", ""),
-                "Образование": fields.get("Education", ""),
-                "Дети": fields.get("Children", 0)
-            })
+            fields = r.get("fields", {})
+            # Формируем запись, включающую ID и все поля из записи
+            record_data = {"ID": r.get("id", "")}
+            record_data.update(fields)
+            data_for_table.append(record_data)
         st.write(f"Найдено {len(data_for_table)} персон:")
         st.dataframe(data_for_table)
         st.session_state["selected_persons"] = data_for_table
 
     st.subheader("Анализ рекламы")
-
     ad_name = st.text_input("Название рекламы", placeholder="Введите название рекламы", key="ad_name_input")  # новое поле
     ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
     audio_description = st.text_input("Аудио описание", placeholder="Введите аудио описание рекламы", key="ad_audio_description_input")
