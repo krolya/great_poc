@@ -394,11 +394,11 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         if "current_response_index" not in st.session_state:
             st.session_state.current_response_index = 0
 
-        # Создаем контейнеры-заполнители, чтобы обновлять раздел с навигацией и детальным ответом отдельно
+        # Создаем контейнеры для навигации и детального отображения ответа
         nav_placeholder = st.empty()
         detail_placeholder = st.empty()
 
-        # Функция для обновления отображаемого ответа без полной перезагрузки страницы
+        # Функция обновления отображаемого ответа без дополнительной перезагрузки страницы
         def update_response(delta):
             st.session_state.current_response_index = (st.session_state.current_response_index + delta) % len(response_data)
             current_response = response_data[st.session_state.current_response_index]
@@ -415,14 +415,26 @@ def display_responses(selected_ad_name, selected_response_test_ids):
             """
             detail_placeholder.markdown(details_html, unsafe_allow_html=True)
 
-        # Размещаем кнопки навигации с привязкой callback-функции для обновления индекса ответа
+        # Размещаем кнопки навигации с привязкой к callback-функции
         nav_cols = nav_placeholder.columns([1, 2, 1])
-        nav_cols[0].button("⬅️ Предыдущий", on_click=update_response, args=(-1,))
+        nav_cols[0].button("⬅️ Предыдущий", on_click=update_response, args=(-1,), key="prev_btn")
         nav_cols[1].write(f"Ответ {st.session_state.current_response_index + 1} из {len(response_data)}")
-        nav_cols[2].button("Следующий ➡️", on_click=update_response, args=(1,))
+        nav_cols[2].button("Следующий ➡️", on_click=update_response, args=(1,), key="next_btn")
 
-        # Отображаем текущий ответ
-        update_response(0)
+        # Отображаем текущий ответ напрямую, чтобы избежать дополнительного вызова update_response(0)
+        current_response = response_data[st.session_state.current_response_index]
+        details_html = f"""
+        <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
+          <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
+          <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
+          <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
+          <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
+          <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
+          <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
+          <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
+        </div>
+        """
+        detail_placeholder.markdown(details_html, unsafe_allow_html=True)
 
 # -------------------
 # Функция получения данных из Airtable
