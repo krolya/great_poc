@@ -66,7 +66,7 @@ def parse_prompt(text: str, placeholders: dict) -> str:
 # -------------------
 # OpenAI / Airtable
 # -------------------
-def openai_chat(system_prompt: str, user_prompt: str) -> str:
+def openai_chat(system_prompt: str, user_prompt: str, file_messages=None) -> str:
     global model_name
 
     if "deepseek" not in model_name.lower():
@@ -77,10 +77,15 @@ def openai_chat(system_prompt: str, user_prompt: str) -> str:
             api_key=st.secrets.NEBIUS_API_KEY,
         )
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
-    ]
+    # Формируем сообщения для запроса
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if file_messages:
+        # Формируем составное сообщение для пользователя: сначала текст, затем файлы
+        user_content = [{"type": "text", "text": user_prompt}] + file_messages
+        messages.append({"role": "user", "content": user_content})
+    else:
+        messages.append({"role": "user", "content": user_prompt})
 
     completion = client.chat.completions.create(
         model=model_name,
@@ -257,7 +262,7 @@ def analyze_ad():
 
     analysis_static = {
         "model_name": model_name,
-        "ad_name": ad_name,  # добавляем ad_name в placeholder
+        "ad_name": ad_name,
         "ad_description": ad_description,
         "audio_description": audio_description,
         "metadata_description": metadata_description,
@@ -266,11 +271,12 @@ def analyze_ad():
     }
 
     uploaded_files = st.session_state.get("analysis_uploaded_files", [])
-    files_text = ""
+    file_messages = []
     for fdict in uploaded_files:
-        filename = fdict["filename"]
-        content = fdict["content"]
-        files_text += f"\n---\nФайл: {filename}\nСодержимое:\n{content}\n"
+        file_messages.append({
+            "type": "image_url",
+            "image_url": {"url": fdict["content"]}
+        })
 
     formula = build_analysis_formula()
     all_records = fetch_analysis_records(formula, page_size=100, max_records=1000)
@@ -309,9 +315,6 @@ def analyze_ad():
             system_prompt = parse_prompt(system_prompt_raw, placeholders)
             user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
-            if files_text:
-                user_prompt += f"\n\nДополнительные файлы:{files_text}"
-
             if st.session_state.debug:
                 st.info(f"Analyzing record #{analyzed_count}")
                 st.write(record)
@@ -320,7 +323,7 @@ def analyze_ad():
                 st.info("User prompt (анализ):")
                 st.write(user_prompt)
 
-            generated_data = openai_chat(system_prompt, user_prompt)
+            generated_data = openai_chat(system_prompt, user_prompt, file_messages=file_messages)
 
             if st.session_state.debug:
                 st.info("Generated data:")
@@ -329,6 +332,85 @@ def analyze_ad():
             upload_to_airtable(generated_data, "Responses")
 
     st.success("Анализ успешно завершен!")
+
+# -------------------
+# Вывод
+# -------------------
+def fetch_airtable_records(table_name: str, formula) -> list:
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
+    return table.all(formula=formula)
+
+def display_responses(selected_ad_name, selected_response_test_ids):
+    if not selected_ad_name or not selected_response_test_ids:
+        st.error("Пожалуйста, выберите название рекламы и тестовые ID ответа")
+        return
+
+    # Получаем записи из таблицы Responses
+    responses_formula = AND(
+        EQ(Field("Ad name"), selected_ad_name),
+        OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
+    )
+    response_records = fetch_airtable_records("Responses", responses_formula)
+
+    # Извлекаем ID персон из ответов
+    person_ids = list(itertools.chain.from_iterable(
+        record["fields"].get("Persona", []) if isinstance(record["fields"].get("Persona"), list)
+        else [record["fields"].get("Persona")]
+        for record in response_records if "Persona" in record["fields"]
+    ))
+    person_ids = list(filter(None, person_ids))  # Убираем пустые значения
+
+    if st.session_state.debug:
+        st.write(person_ids)
+
+    # Получаем записи из таблицы Personas
+    personas_formula = OR(*[EQ(Field("ID"), pid) for pid in person_ids])
+    person_records = fetch_airtable_records("Personas", personas_formula)
+
+    response_data = [
+        {
+            "ID": r.get("id", ""),
+            "Ad name": r["fields"].get("Ad name", ""),
+            "Response": r["fields"].get("Response", ""),
+            "Response clarity score": r["fields"].get("Response clarity score", 0),
+            "Response clarity description": r["fields"].get("Response clarity description", ""),
+            "Response likeability score": r["fields"].get("Response likeability score", 0),
+            "Response likeability description": r["fields"].get("Response likeability description", ""),
+            "Response trust score": r["fields"].get("Response trust score", 0),
+            "Response trust description": r["fields"].get("Response trust description", ""),
+            "Response diversity score": r["fields"].get("Response diversity score", 0),
+            "Response diversity description": r["fields"].get("Response diversity description", ""),
+            "Response message score": r["fields"].get("Response message score", 0),
+            "Response message description": r["fields"].get("Response message description", ""),
+            "Response free question 1": r["fields"].get("Response free question 1", ""),
+            "Response description": r["fields"].get("Response description", "")
+        }
+        for r in response_records
+    ]
+    st.write("Полная таблица ответов (Responses):")
+    st.dataframe(response_data)
+
+    person_data = [
+        {
+            "ID": p.get("id", ""),
+            "Name": p["fields"].get("Name", ""),
+            "Gender": p["fields"].get("Gender", ""),
+            "Marital status": p["fields"].get("Marital status", ""),
+            "Income": p["fields"].get("Income", ""),
+            "Age": p["fields"].get("Age", ""),
+            "Children": p["fields"].get("Children", 0),
+            "Region": p["fields"].get("Region", ""),
+            "City size": p["fields"].get("City size", ""),
+            "Education": p["fields"].get("Education", ""),
+            "Generation ID": p["fields"].get("Generation ID", ""),
+            "Generation model": p["fields"].get("Generation model", ""),
+            "Description": p["fields"].get("Description", "")
+        }
+        for p in person_records
+    ]
+    st.write("Полная таблица персон (Personas), давших ответы:")
+    st.dataframe(person_data)
 
 # -------------------
 # Функция получения данных из Airtable
@@ -363,68 +445,7 @@ def show_response_analysis_tab():
     with col_right:
         st.subheader("Анализ ответов")
         if st.button("Показать", key="show_responses_button"):
-            if selected_ad_name and selected_response_test_ids:
-                api = Api(st.secrets.AIRTABLE_API_TOKEN)
-                table = api.table(st.secrets.AIRTABLE_BASE_ID, "Responses")
-                formula = AND(
-                    EQ(Field("Ad name"), selected_ad_name),
-                    OR(*[EQ(Field("Response test ID"), rt_id) for rt_id in selected_response_test_ids])
-                )
-                response_records = table.all(formula=formula)
-
-                person_ids = list(itertools.chain.from_iterable(
-                    record["fields"].get("Persona", []) if isinstance(record["fields"].get("Persona"), list) else [record["fields"].get("Persona")]
-                    for record in response_records if "Persona" in record["fields"]
-                ))
-                person_ids = list(filter(None, person_ids))  # Убираем пустые значения
-
-                person_table = api.table(st.secrets.AIRTABLE_BASE_ID, "Personas")
-                person_records = person_table.all(formula=OR(*[EQ(Field("ID"), pid) for pid in person_ids]))
-
-                response_data = [
-                    {
-                        "ID": r.get("id", ""),
-                        "Ad name": r["fields"].get("Ad name", ""),
-                        "Response": r["fields"].get("Response", ""),
-                        "Response clarity score": r["fields"].get("Response clarity score", 0),
-                        "Response clarity description": r["fields"].get("Response clarity description", ""),
-                        "Response likeability score": r["fields"].get("Response likeability score", 0),
-                        "Response likeability description": r["fields"].get("Response likeability description", ""),
-                        "Response trust score": r["fields"].get("Response trust score", 0),
-                        "Response trust description": r["fields"].get("Response trust description", ""),
-                        "Response diversity score": r["fields"].get("Response diversity score", 0),
-                        "Response diversity description": r["fields"].get("Response diversity description", ""),
-                        "Response message score": r["fields"].get("Response message score", 0),
-                        "Response message description": r["fields"].get("Response message description", ""),
-                        "Response free question 1": r["fields"].get("Response free question 1", ""),
-                        "Response description": r["fields"].get("Response description", "")
-                    }
-                    for r in response_records
-                ]
-                st.write("Полная таблица ответов (Responses):")
-                st.dataframe(response_data)
-
-                person_data = [
-                    {
-                        "ID": p.get("id", ""),
-                        "Name": p["fields"].get("Name", ""),
-                        "Gender": p["fields"].get("Gender", ""),
-                        "Marital status": p["fields"].get("Marital status", ""),
-                        "Income": p["fields"].get("Income", ""),
-                        "Age": p["fields"].get("Age", ""),
-                        "Children": p["fields"].get("Children", 0),
-                        "Region": p["fields"].get("Region", ""),
-                        "City size": p["fields"].get("City size", ""),
-                        "Education": p["fields"].get("Education", ""),
-                        "Generation ID": p["fields"].get("Generation ID", ""),
-                        "Generation model": p["fields"].get("Generation model", ""),
-                        "Description": p["fields"].get("Description", "")
-                    }
-                    for p in person_records
-                ]
-                st.write("Полная таблица персон (Personas), давших ответы:")
-                st.dataframe(person_data)
-
+            display_responses(selected_ad_name, selected_response_test_ids)
 
 
 def show_generation_tab():
