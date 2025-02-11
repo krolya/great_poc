@@ -385,12 +385,14 @@ def display_responses(selected_ad_name, selected_response_test_ids):
     st.write("Полная таблица ответов с описанием персон:")
 
     # Рассчитываем высоту dataframe: минимум 10 строк
-    num_rows = len(response_data)
-    row_height = 30    # примерная высота одной строки в пикселях
-    header_height = 40 # высота заголовка
-    total_height = max(num_rows, 10) * row_height + header_height
+    #um_rows = len(response_data)
+    #row_height = 30    # примерная высота одной строки в пикселях
+    #header_height = 40 # высота заголовка
+    #total_height = max(num_rows, 10) * row_height + header_height
 
-    st.dataframe(response_data, height=total_height)
+    #st.dataframe(response_data, height=total_height)
+    st.dataframe(response_data)
+
 
     # Закомментирован вывод таблицы персон (запрос и отображение записей из таблицы Personas больше не требуется)
     # persona_data = [...]
