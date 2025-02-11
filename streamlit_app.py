@@ -493,8 +493,16 @@ def show_response_analysis_tab():
     
     with col_right:
         st.subheader("Анализ ответов")
+
+        # 1. Кнопка, чтобы пользователь включил «Показ» ответов
         if st.button("Показать", key="show_responses_button"):
+            # Запоминаем в сессии, что пользователь хочет видеть ответы
+            st.session_state["show_responses"] = True
+
+        # 2. Если в сессии записано, что показываем, то вызываем display_responses
+        if st.session_state.get("show_responses", False):
             display_responses(selected_ad_name, selected_response_test_ids)
+
 
 
 def show_generation_tab():
