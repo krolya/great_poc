@@ -355,21 +355,24 @@ def display_responses(selected_ad_name, selected_response_test_ids):
 
     # Извлекаем ID персон из ответов
     person_ids = list(itertools.chain.from_iterable(
-        record["fields"].get("Persona", []) if isinstance(record["fields"].get("Persona"), list)
+        record["fields"].get("Persona", [])
+        if isinstance(record["fields"].get("Persona"), list)
         else [record["fields"].get("Persona")]
         for record in response_records if "Persona" in record["fields"]
     ))
     person_ids = list(filter(None, person_ids))  # Убираем пустые значения
 
     if st.session_state.debug:
-        st.write(person_ids)
+        st.write("Получили следующие идентификаторы персон:", person_ids)
 
-    # Получаем записи из таблицы Personas
-    personas_table = Api(st.secrets.AIRTABLE_API_TOKEN).table(st.secrets.AIRTABLE_BASE_ID, "Personas")
-    person_records = personas_table.all(
-        formula=OR(*[EQ(Field("RECORD_ID()"), pid) for pid in person_ids])
-    )
-
+    # Формируем формулу для таблицы Personas вручную с вызовом RECORD_ID()
+    person_records = []
+    if person_ids:
+        formula_str = "OR(" + ",".join([f"RECORD_ID() = '{pid}'" for pid in person_ids]) + ")"
+        personas_table = Api(st.secrets.AIRTABLE_API_TOKEN).table(st.secrets.AIRTABLE_BASE_ID, "Personas")
+        person_records = personas_table.all(formula=formula_str)
+    
+    # Выводим данные таблицы ответов
     response_data = [
         {
             "ID": r.get("id", ""),
