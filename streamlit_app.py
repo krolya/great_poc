@@ -382,22 +382,49 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         }
         response_data.append(response_entry)
 
-    st.write("Полная таблица ответов с описанием персон:")
+    # Вывод таблицы ответов под expander
+    with st.expander("Показать таблицу ответов"):
+        num_rows = len(response_data)
+        row_height = 30    # примерная высота одной строки в пикселях
+        header_height = 40 # высота заголовка
+        total_height = max(num_rows, 10) * row_height + header_height
+        st.dataframe(response_data, height=total_height)
 
-    # Рассчитываем высоту dataframe: минимум 10 строк
-    #um_rows = len(response_data)
-    #row_height = 30    # примерная высота одной строки в пикселях
-    #header_height = 40 # высота заголовка
-    #total_height = max(num_rows, 10) * row_height + header_height
+    # Если есть хотя бы один ответ, показываем детальный просмотр с навигацией
+    if response_data:
+        # Инициализируем индекс текущего ответа в session_state, если его ещё нет
+        if "current_response_index" not in st.session_state:
+            st.session_state.current_response_index = 0
 
-    #st.dataframe(response_data, height=total_height)
-    st.dataframe(response_data)
+        # Контейнер для навигационных кнопок
+        nav_col1, nav_col2, nav_col3 = st.columns([1, 2, 1])
+        with nav_col1:
+            if st.button("Назад"):
+                if st.session_state.current_response_index > 0:
+                    st.session_state.current_response_index -= 1
+                    st.experimental_rerun()
+        with nav_col3:
+            if st.button("Вперед"):
+                if st.session_state.current_response_index < len(response_data) - 1:
+                    st.session_state.current_response_index += 1
+                    st.experimental_rerun()
 
+        # Получаем текущий ответ из списка
+        current_response = response_data[st.session_state.current_response_index]
 
-    # Закомментирован вывод таблицы персон (запрос и отображение записей из таблицы Personas больше не требуется)
-    # persona_data = [...]
-    # st.write("Полная таблица персон (Personas), давших ответы:")
-    # st.dataframe(persona_data)
+        # Формируем HTML-разметку для рамки с детальным ответом
+        details_html = f"""
+        <div style="border: 2px solid #ddd; padding: 10px; margin-top: 10px;">
+          <p><b>Описание персоны:</b> {current_response.get("Persona description", "")}</p>
+          <p><b>Ответ персоны:</b> {current_response.get("Response", "")}</p>
+          <p><b>Понятность:</b> {current_response.get("Response clarity score", 0)} / {current_response.get("Response clarity description", "")}</p>
+          <p><b>Лайкабилити:</b> {current_response.get("Response likeability score", 0)} / {current_response.get("Response likeability description", "")}</p>
+          <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
+          <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
+          <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
+        </div>
+        """
+        st.markdown(details_html, unsafe_allow_html=True)
 
 # -------------------
 # Функция получения данных из Airtable
