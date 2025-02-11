@@ -349,17 +349,13 @@ def display_responses(selected_ad_name, selected_response_test_ids):
     Если ответы ещё не загружены в сессию, делаем запрос.
     Иначе берём из st.session_state.
     """
-
     if not selected_ad_name or not selected_response_test_ids:
         st.error("Пожалуйста, выберите название рекламы и тестовые ID ответа")
         return
 
     # Проверяем, загружали ли мы уже ответы для текущего набора фильтров
-    # Чтобы различать наборы фильтров, можно завести ключ вида ("response_data", selected_ad_name, tuple(selected_response_test_ids))
     filter_key = f"resp_data_{selected_ad_name}_{','.join(sorted(selected_response_test_ids))}"
 
-    # Если уже есть данные в сессии для этих же фильтров, берём их
-    # Иначе делаем запрос и сохраняем
     if filter_key not in st.session_state:
         responses_formula = AND(
             EQ(Field("Ad name"), selected_ad_name),
@@ -390,24 +386,20 @@ def display_responses(selected_ad_name, selected_response_test_ids):
                 "Response message description": fields.get("Response message description", ""),
                 "Response free question 1": fields.get("Response free question 1", ""),
                 "Response description": fields.get("Response description", ""),
+                "Response description": fields.get("Response description", ""),
                 "Persona description": persona_description
             }
             response_data.append(response_entry)
 
-        # Сохраняем результат в session_state для этих фильтров
         st.session_state[filter_key] = response_data
-
-        # Сбросим индекс (чтобы начинать с первого ответа)
         st.session_state["current_response_index"] = 0
     else:
         response_data = st.session_state[filter_key]
 
-    # Если пусто, выводим предупреждение
     if not response_data:
         st.warning("Нет данных по этим фильтрам.")
         return
 
-    # Показ таблицы ответов
     with st.expander("Показать таблицу ответов"):
         num_rows = len(response_data)
         row_height = 30
@@ -415,20 +407,17 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         total_height = max(num_rows, 10) * row_height + header_height
         st.dataframe(response_data, height=total_height)
 
-    # Устанавливаем индекс, если его ещё нет
     if "current_response_index" not in st.session_state:
         st.session_state["current_response_index"] = 0
 
     nav_placeholder = st.empty()
     detail_placeholder = st.empty()
 
-    # Функция для обновления текущего ответа
     def update_response(delta):
         st.session_state.current_response_index = (
             st.session_state.current_response_index + delta
         ) % len(response_data)
 
-    # Панель навигации
     nav_cols = nav_placeholder.columns([1, 2, 1])
     nav_cols[0].button(
         "⬅️ Предыдущий",
@@ -446,7 +435,6 @@ def display_responses(selected_ad_name, selected_response_test_ids):
         key="next_btn"
     )
 
-    # Рисуем выбранный ответ
     current_index = st.session_state.current_response_index
     current_response = response_data[current_index]
     details_html = f"""
@@ -458,9 +446,45 @@ def display_responses(selected_ad_name, selected_response_test_ids):
       <p><b>Доверие:</b> {current_response.get("Response trust score", 0)} / {current_response.get("Response trust description", "")}</p>
       <p><b>Отличие:</b> {current_response.get("Response diversity score", 0)} / {current_response.get("Response diversity description", "")}</p>
       <p><b>Месседж:</b> {current_response.get("Response message score", 0)} / {current_response.get("Response message description", "")}</p>
+      <p><b>Response description:</b> {current_response.get("Response description", "")}</p>
+      <p><b>Response free question 1:</b> {current_response.get("Response free question 1", "")}</p>
     </div>
     """
     detail_placeholder.markdown(details_html, unsafe_allow_html=True)
+    
+    st.markdown("### Сводная таблица по ответам")
+    response_params = [
+        ("Понятность", "Response clarity score"),
+        ("Лайкабилити", "Response likeability score"),
+        ("Доверие", "Response trust score"),
+        ("Отличие", "Response diversity score"),
+        ("Месседж", "Response message score")
+    ]
+    
+    summary_data = []
+    for param_name, field_key in response_params:
+        cleaned_scores = []
+        for resp in response_data:
+            try:
+                score = float(resp.get(field_key, 0))
+                cleaned_scores.append(score)
+            except (ValueError, TypeError):
+                continue
+        if cleaned_scores:
+            min_val = min(cleaned_scores)
+            avg_val = sum(cleaned_scores) / len(cleaned_scores)
+            max_val = max(cleaned_scores)
+        else:
+            min_val = avg_val = max_val = 0
+        
+        summary_data.append({
+            "Параметр ответа": param_name,
+            "Минимальный скор среди ответов": min_val,
+            "Среднее арифметическое ответов": avg_val,
+            "Максимальный скор среди ответов": max_val
+        })
+    
+    st.table(summary_data)
 
 
 # -------------------
