@@ -295,7 +295,7 @@ def analyze_ad():
             # Предполагается, что record — это словарь с данными персоны, полученными ранее для отображения
             dynamic_part = {
                 "response_test_id": response_test_id,
-                "record_id": record.get("ID", ""),
+                "record_id": record.get("Record ID", ""),
                 "description": record.get("Description", ""),
                 "name": record.get("Name", ""),
                 "age": record.get("Age", 0),
