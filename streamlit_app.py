@@ -278,36 +278,38 @@ def analyze_ad():
             "image_url": {"url": fdict["content"]}
         })
 
-    formula = build_analysis_formula()
-    all_records = fetch_analysis_records(formula, page_size=100, max_records=1000)
+    # Используем отобранные персоны из датафрейма/таблицы, сохранённые в session_state под ключом "selected_persons"
+    persons = st.session_state.get("selected_persons", [])
+    if not persons:
+        st.error("Нет отобранных персон. Пожалуйста, отберите персоны сначала.")
+        return
 
     analyzed_count = 0
 
     with st.spinner("Генерация ответов..."):
-        for record in all_records:
+        for record in persons:
             if analyzed_count >= number_of_persons_analysis:
                 break
 
             analyzed_count += 1
-            rfields = record["fields"]
-
+            # Предполагается, что record — это словарь с данными персоны, полученными ранее для отображения
             dynamic_part = {
                 "response_test_id": response_test_id,
-                "record_id": record.get("id", ""),
-                "description": rfields.get("Description", ""),
-                "name": rfields.get("Name", ""),
-                "age": rfields.get("Age", 0),
-                "region": rfields.get("Region", ""),
-                "city_size": rfields.get("City size", ""),
-                "children": rfields.get("Children", 0),
-                "income": rfields.get("Income", ""),
-                "marital_status": rfields.get("Marital status", ""),
-                "education": rfields.get("Education", ""),
-                "children_age_1": rfields.get("Children age 1", 0),
-                "children_age_2": rfields.get("Children age 2", 0),
-                "children_age_3": rfields.get("Children age 3", 0),
-                "children_age_4": rfields.get("Children age 4", 0),
-                "children_age_5": rfields.get("Children age 5", 0)
+                "record_id": record.get("ID", ""),
+                "description": record.get("Description", ""),
+                "name": record.get("Имя", ""),
+                "age": record.get("Возраст", 0),
+                "region": record.get("Регион", ""),
+                "city_size": record.get("City size", ""),
+                "children": record.get("Дети", 0),
+                "income": record.get("Доход", ""),
+                "marital_status": record.get("Marital status", ""),
+                "education": record.get("Образование", ""),
+                "children_age_1": record.get("Children age 1", 0),
+                "children_age_2": record.get("Children age 2", 0),
+                "children_age_3": record.get("Children age 3", 0),
+                "children_age_4": record.get("Children age 4", 0),
+                "children_age_5": record.get("Children age 5", 0)
             }
 
             placeholders = {**analysis_static, **dynamic_part}
@@ -569,6 +571,7 @@ def show_analysis_tab():
             })
         st.write(f"Найдено {len(data_for_table)} персон:")
         st.dataframe(data_for_table)
+        st.session_state["selected_persons"] = data_for_table
 
     st.subheader("Анализ рекламы")
 
