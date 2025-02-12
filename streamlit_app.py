@@ -505,7 +505,17 @@ def fetch_distinct_values(table_name, field_name, filter_by=None):
     if filter_by:
         formula = EQ(Field("Ad name"), filter_by)
     records = table.all(formula=formula)
-    return list(set(record["fields"].get(field_name, "") for record in records if field_name in record["fields"]))
+
+    unique_values = set()
+    for record in records:
+        field_value = record["fields"].get(field_name, "")
+        if isinstance(field_value, list):  # Если это список (мультиселект)
+            unique_values.update(field_value)  # Добавляем все элементы списка
+        else:
+            unique_values.add(field_value)  # Добавляем одиночное значение
+    
+    return list(unique_values)
+
 
 # -------------------
 # UI вкладок
