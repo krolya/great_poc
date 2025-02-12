@@ -44,6 +44,7 @@ analysis_marital_selected = ["В браке", "Разведен(-а)", "В от�
 analysis_children_count = (0, 3)
 analysis_children_age = (0, 18)
 analysis_gender_selected = ["Мужской", "Женский"]  # добавляем фильтр по полу
+analysis_tags_selected = []
 
 # -------------------
 # Функция загрузки файла из GitHub
@@ -187,6 +188,13 @@ def build_analysis_formula() -> str:
             )
         )
 
+    # Добавляем фильтр по тегам: если указаны тэги, то каждая запись должна содержать все выбранные
+    if analysis_tags_selected:
+        tag_conditions = []
+        for tag in analysis_tags_selected:
+            tag_conditions.append(f"FIND('{tag}', {{Tags}}) > 0")
+        conds.append("AND(" + ", ".join(tag_conditions) + ")")
+    
     formula_obj = AND(*conds)
     return str(formula_obj)
 
@@ -197,12 +205,10 @@ def generate_person():
     global generation_id
     generation_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
 
-    # Если debug, берём промты из text_area
     if st.session_state.debug:
         system_prompt_raw = st.session_state.get("gen_system_prompt", "")
         user_prompt_raw = st.session_state.get("gen_user_prompt", "")
     else:
-        # Загружаем из GitHub
         system_prompt_raw = get_file_from_github("person_generation_system.promt")
         user_prompt_raw = get_file_from_github("person_generation.promt")
 
@@ -221,7 +227,9 @@ def generate_person():
         "children_min": children_count[0],
         "children_max": children_count[1],
         "children_age_min": children_age[0],
-        "children_age_max": children_age[1]
+        "children_age_max": children_age[1],
+        "generation_instruction": generation_instruction),
+        "tags": tags
     }
 
     system_prompt = parse_prompt(system_prompt_raw, gen_placeholders)
@@ -569,6 +577,14 @@ def show_generation_tab():
             key="gen_user_prompt_textarea"
         )
 
+    # Новое текстовое поле для инструкции генерации
+    global generation_instruction
+    generation_instruction = st.text_input(
+        "Дополнительная инструкция для генерации персон ", 
+        placeholder="Введите инструкцию для генерации, можно добавить напр. черты характера, особенности, итд", 
+        key="generation_instruction"
+    )
+
     if st.button("Сгенерировать", key="generate_button"):
         st.info("Генерация началась...")
         generate_person()
@@ -746,14 +762,17 @@ def show_filters_tab_generation():
             key="slider_children_age_gen"
         )
 
-    tags = st.text_input("Тэги", placeholder="Введите тэги через запятую", key="tags_gen")
+    # Поле для тегов (будет использовано как placeholder для генерации)
+    tags = st.text_input(
+        "Тэги", 
+        placeholder="Введите тэги через запятую", 
+        key="tags_gen"
+    )
 
 
 def show_filters_tab_analysis():
-    global number_of_persons_analysis
-    global analysis_age_range, analysis_income_selected, analysis_education_selected
-    global analysis_selected_regions, analysis_city_size_selected, analysis_marital_selected
-    global analysis_children_count, analysis_children_age, analysis_gender_selected
+    global number_of_persons_analysis, analysis_tags_selected, analysis_age_range, analysis_income_selected, analysis_education_selected
+    global analysis_selected_regions, analysis_city_size_selected, analysis_marital_selected, analysis_children_count, analysis_children_age, analysis_gender_selected
 
     st.header("Фильтры")
     with st.expander("Основные настройки", expanded=True):
@@ -860,6 +879,11 @@ def show_filters_tab_analysis():
             0, 18, (0, 18),
             key="slider_children_age_analysis"
         )
+
+        # Новый multi-select для тэгов
+        all_tags = fetch_distinct_values("Personas", "Tags")
+        global analysis_tags_selected
+        analysis_tags_selected = st.multiselect("Тэги", options=all_tags, key="tags_filter_analysis")
 
 
 def main():
