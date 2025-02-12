@@ -228,7 +228,7 @@ def generate_person():
         "children_max": children_count[1],
         "children_age_min": children_age[0],
         "children_age_max": children_age[1],
-        "generation_instruction": generation_instruction),
+        "generation_instruction": generation_instruction,
         "tags": tags
     }
 
