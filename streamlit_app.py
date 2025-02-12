@@ -100,11 +100,29 @@ def openai_chat(system_prompt: str, user_prompt: str, file_messages=None) -> str
 
     return completion.choices[0].message.content
 
+# -------------------
+# Функция загрузки новых тэгов в Airtable
+# -------------------
+def ensure_tags_exist(api, base_id, table_name, tags):
+    """
+    Проверяет существование тэгов в Airtable и добавляет новые, если их нет.
+    """
+    table = api.table(base_id, table_name)
+    existing_tags = fetch_distinct_values(table_name, "Tags")
+    new_tags = set(tags) - set(existing_tags)
+    
+    if new_tags:
+        table.batch_create([{"fields": {"Tags": [tag]}} for tag in new_tags])
+    
+    return list(set(tags))  # Возвращает объединенный список старых и новых тэгов
 
 def upload_to_airtable(data, table_name="Personas") -> int:
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     table = api.table(st.secrets.AIRTABLE_BASE_ID, table_name)
     st.info("Загружаем данные в Airtable...")
+
+     # Убеждаемся, что все тэги существуют
+    ensure_tags_exist(api, st.secrets.AIRTABLE_BASE_ID, table_name, tags)
 
     records = json.loads(data)
     response = table.batch_create(records["records"])
