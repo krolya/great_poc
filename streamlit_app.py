@@ -122,7 +122,7 @@ def upload_to_airtable(data, table_name="Personas") -> int:
     st.info("Загружаем данные в Airtable...")
 
      # Убеждаемся, что все тэги существуют
-    ensure_tags_exist(api, st.secrets.AIRTABLE_BASE_ID, table_name, tags)
+    #ensure_tags_exist(api, st.secrets.AIRTABLE_BASE_ID, table_name, tags)
 
     records = json.loads(data)
     response = table.batch_create(records["records"])
