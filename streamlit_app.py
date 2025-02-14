@@ -422,7 +422,6 @@ def display_responses(selected_ad_name, selected_response_test_ids):
                 "Response message description": fields.get("Response message description", ""),
                 "Response free question 1": fields.get("Response free question 1", ""),
                 "Response description": fields.get("Response description", ""),
-                "Response description": fields.get("Response description", ""),
                 "Persona description": persona_description
             }
             response_data.append(response_entry)
