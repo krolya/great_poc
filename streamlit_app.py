@@ -7,6 +7,7 @@ import itertools
 from openai import OpenAI
 from pyairtable import Api
 from pyairtable.formulas import AND, OR, EQ, GTE, LTE, Field
+from concurrent.futures import ThreadPoolExecutor
 
 # -------------------
 # Глобальные переменные
@@ -275,6 +276,126 @@ def generate_person():
 # -------------------
 # Анализ
 # -------------------
+def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_prompt_raw, user_prompt_raw, file_messages, analysis_static):
+    # Обрабатываем записи от start_index до end_index (не включая end_index)
+    for idx, record in enumerate(persons[start_index:end_index], start=start_index):
+        # Формирование динамических данных для текущей записи
+        dynamic_part = {
+            "response_test_id": response_test_id,
+            "record_id": record.get("Record ID", ""),
+            "description": record.get("Description", ""),
+            "name": record.get("Name", ""),
+            "age": record.get("Age", 0),
+            "region": record.get("Region", ""),
+            "city_size": record.get("City size", ""),
+            "children": record.get("Children", 0),
+            "income": record.get("Income", ""),
+            "marital_status": record.get("Marital status", ""),
+            "education": record.get("Education", ""),
+            "children_age_1": record.get("Children age 1", 0),
+            "children_age_2": record.get("Children age 2", 0),
+            "children_age_3": record.get("Children age 3", 0),
+            "children_age_4": record.get("Children age 4", 0),
+            "children_age_5": record.get("Children age 5", 0)
+        }
+        # Объединяем статические и динамические параметры
+        placeholders = {**analysis_static, **dynamic_part}
+        system_prompt = parse_prompt(system_prompt_raw, placeholders)
+        user_prompt = parse_prompt(user_prompt_raw, placeholders)
+
+        if st.session_state.debug:
+            st.info(f"Поток обрабатывает запись {idx}")
+            st.write(record)
+            st.info("System prompt (анализ):")
+            st.write(system_prompt)
+            st.info("User prompt (анализ):")
+            st.write(user_prompt)
+
+        generated_data = openai_chat(system_prompt, user_prompt, file_messages=file_messages)
+
+        if st.session_state.debug:
+            st.info("Сгенерированный ответ:")
+            st.write(generated_data)
+
+        upload_to_airtable(generated_data, "Responses")
+
+
+def parallel_analyze_ad(num_threads):
+    persons = st.session_state.get("selected_persons", [])
+    if not persons:
+        st.error("Нет отобранных персон. Пожалуйста, отберите персоны сначала.")
+        return
+
+    total_persons = len(persons)
+    if num_threads < 1:
+        st.error("Количество потоков должно быть не менее 1")
+        return
+
+    # Определяем размер порции для каждого потока
+    chunk_size = total_persons // num_threads
+    remainder = total_persons % num_threads
+
+    if st.session_state.debug:
+        st.info(f"Запуск параллельного анализа с {num_threads} потоками. Каждому потоку достается примерно {chunk_size} записей, остаток: {remainder}")
+
+    # Получаем системный и пользовательский промты
+    response_test_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    if st.session_state.debug:
+        system_prompt_raw = st.session_state.get("analysis_system_prompt", "")
+        user_prompt_raw = st.session_state.get("analysis_user_prompt", "")
+    else:
+        system_prompt_raw = get_file_from_github("ad_analysis_system.promt")
+        user_prompt_raw = get_file_from_github("ad_analysis.promt")
+
+    # Формируем список файлов, если они загружены
+    uploaded_files = st.session_state.get("analysis_uploaded_files", [])
+    file_messages = []
+    for fdict in uploaded_files:
+        file_messages.append({
+            "type": "image_url",
+            "image_url": {"url": fdict["content"]}
+        })
+
+    # Статические параметры для анализа (например, описание рекламы и т.п.)
+    analysis_static = {
+        "model_name": model_name,
+        "ad_name": ad_name,
+        "ad_description": ad_description,
+        "audio_description": audio_description,
+        "metadata_description": metadata_description,
+        "message": message,
+        "free_question": free_question
+    }
+
+    # Запускаем обработку в нескольких потоках
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = []
+        start = 0
+        for i in range(num_threads):
+            # Для распределения остатка можно добавить по одной записи первичным потокам
+            extra = 1 if i < remainder else 0
+            end = start + chunk_size + extra
+            futures.append(
+                executor.submit(
+                    analyze_ad_chunk,
+                    start, end,
+                    response_test_id,
+                    persons,
+                    system_prompt_raw,
+                    user_prompt_raw,
+                    file_messages,
+                    analysis_static
+                )
+            )
+            if st.session_state.debug:
+                st.info(f"Поток {i+1} обрабатывает записи с {start} по {end - 1}")
+            start = end
+        # Ждем завершения всех потоков
+        for future in futures:
+            future.result()
+
+    st.success("Анализ успешно завершен!")
+
 def analyze_ad():
     st.write("Анализ рекламы")
     response_test_id = str(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
@@ -679,6 +800,7 @@ def show_analysis_tab():
 
     # Новое числовое поле для указания начального индекса при анализе
     st.number_input("Начальный индекс для анализа", min_value=0, value=0, step=1, key="analysis_start_index")
+    st.number_input("Количество потокв для анализа", min_value=0, value=0, step=1, key="analysis_num_threads")
 
     uploaded_files = st.file_uploader("Добавить до 10 файлов", accept_multiple_files=True, key="analysis_uploader")
 
@@ -698,7 +820,10 @@ def show_analysis_tab():
 
     if st.button("Анализировать", key="analyze_button"):
         st.info("Анализ начался...")
-        analyze_ad()
+        if st.session_state.get("analysis_num_threads", 1) <= 1:
+            analyze_ad()
+        else:
+            parallel_analyze_ad(st.session_state["analysis_num_threads"])
 
 
 def show_filters_tab_generation():
