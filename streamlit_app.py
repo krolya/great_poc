@@ -277,6 +277,10 @@ def generate_person():
 # Анализ
 # -------------------
 def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_prompt_raw, user_prompt_raw, file_messages, analysis_static):
+
+    if "debug" not in st.session_state:
+        st.session_state["debug"] = False
+
     # Обрабатываем записи от start_index до end_index (не включая end_index)
     for idx, record in enumerate(persons[start_index:end_index], start=start_index):
         # Формирование динамических данных для текущей записи
@@ -321,6 +325,10 @@ def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_p
 
 
 def parallel_analyze_ad(num_threads):
+
+    if "debug" not in st.session_state:
+        st.session_state["debug"] = False
+
     persons = st.session_state.get("selected_persons", [])
     if not persons:
         st.error("Нет отобранных персон. Пожалуйста, отберите персоны сначала.")
@@ -1058,12 +1066,10 @@ def show_filters_tab_analysis():
 
 def main():
     st.set_page_config(page_title="Более нормальный человек", layout="wide")
-    
+
     if "debug" not in st.session_state:
         st.session_state["debug"] = False
 
-    if "debug" not in st.session_state:
-        st.session_state.debug = False
 
     tab1, tab2, tab3, tab4 = st.tabs(["Генерация персон", "Аналитика", "Анализ ответов", "Настройки"])
 
