@@ -800,7 +800,7 @@ def show_analysis_tab():
 
     # Новое числовое поле для указания начального индекса при анализе
     st.number_input("Начальный индекс для анализа", min_value=0, value=0, step=1, key="analysis_start_index")
-    st.number_input("Количество потокв для анализа", min_value=0, value=0, step=1, key="analysis_num_threads")
+    st.number_input("Количество потоков для анализа", min_value=0, value=0, step=1, key="analysis_num_threads")
 
     uploaded_files = st.file_uploader("Добавить до 10 файлов", accept_multiple_files=True, key="analysis_uploader")
 
