@@ -1058,6 +1058,9 @@ def show_filters_tab_analysis():
 
 def main():
     st.set_page_config(page_title="Более нормальный человек", layout="wide")
+    
+    if "debug" not in st.session_state:
+        st.session_state["debug"] = False
 
     if "debug" not in st.session_state:
         st.session_state.debug = False
