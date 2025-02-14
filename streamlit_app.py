@@ -310,15 +310,26 @@ def analyze_ad():
         st.error("Нет отобранных персон. Пожалуйста, отберите персоны сначала.")
         return
 
+    # Получаем начальный индекс для анализа
+    start_index = st.session_state.get("analysis_start_index", 0)
+    if start_index < 0 or start_index >= len(persons):
+        st.error(f"Начальный индекс ({start_index}) вне диапазона (0 - {len(persons)-1}).")
+        return
+
     analyzed_count = 0
+    total_available = len(persons) - start_index
+    total_to_process = min(number_of_persons_analysis, total_available)
+    progress_placeholder = st.empty()
 
     with st.spinner("Генерация ответов..."):
-        for record in persons:
+        for idx, record in enumerate(persons[start_index:], start=start_index):
             if analyzed_count >= number_of_persons_analysis:
                 break
 
             analyzed_count += 1
-            # Предполагается, что record — это словарь с данными персоны, полученными ранее для отображения
+            progress_placeholder.write(f"Обработано {analyzed_count} из {total_to_process} (индекс: {idx} из {len(persons)})")
+
+            # Формируем динамическую часть для подстановки в промпты
             dynamic_part = {
                 "response_test_id": response_test_id,
                 "record_id": record.get("Record ID", ""),
@@ -339,12 +350,11 @@ def analyze_ad():
             }
 
             placeholders = {**analysis_static, **dynamic_part}
-
             system_prompt = parse_prompt(system_prompt_raw, placeholders)
             user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
             if st.session_state.debug:
-                st.info(f"Analyzing record #{analyzed_count}")
+                st.info(f"Analyzing record #{analyzed_count} (индекс {idx})")
                 st.write(record)
                 st.info("System prompt (анализ):")
                 st.write(system_prompt)
@@ -872,7 +882,7 @@ def show_filters_tab_analysis():
 
         st.markdown("##### Размер населенного пункта")
         city_size_options = [
-            "До 100 0000 человек",
+            "До 100 000 человек",
             "От 100 000 до 500 000",
             "От 500 000 до 1 000 000",
             "Свыше 1 000 000"
