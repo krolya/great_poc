@@ -627,7 +627,7 @@ def show_analysis_tab():
 
         if st.session_state.debug:
             st.write(formula)
-            
+
         records = fetch_analysis_records(formula, page_size=100, max_records=1000)
         data_for_table = []
         for r in records:
@@ -710,7 +710,7 @@ def show_filters_tab_generation():
             min_value=4, max_value=100, value=(18, 60),
             key="slider_age_range_gen"
         )
-        income_options = ["Низкий", "Низкий плюс"," Средний", "Средний плюс","Высокий","Высокий плюс"]
+        income_options = ["Низкий", "Низкий плюс","Средний", "Средний плюс","Высокий","Высокий плюс"]
         income_selected = st.multiselect(
             "Выберите группу доходов", 
             options=income_options, 
