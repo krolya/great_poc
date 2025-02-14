@@ -276,14 +276,17 @@ def generate_person():
 # -------------------
 # Анализ
 # -------------------
-def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_prompt_raw, user_prompt_raw, file_messages, analysis_static):
-
-    if "debug" not in st.session_state:
-        st.session_state["debug"] = False
-
-    # Обрабатываем записи от start_index до end_index (не включая end_index)
+# --- Bare mode parallel analysis functions ---
+def analyze_ad_chunk(start_index, end_index, response_test_id, persons,
+                       system_prompt_raw, user_prompt_raw, file_messages,
+                       analysis_static, debug=False):
+    """
+    Processes a slice of records without using any Streamlit UI calls.
+    Returns a list of (index, generated_data) tuples.
+    """
+    results = []
     for idx, record in enumerate(persons[start_index:end_index], start=start_index):
-        # Формирование динамических данных для текущей записи
+        # Build dynamic part for this record.
         dynamic_part = {
             "response_test_id": response_test_id,
             "record_id": record.get("Record ID", ""),
@@ -302,33 +305,25 @@ def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_p
             "children_age_4": record.get("Children age 4", 0),
             "children_age_5": record.get("Children age 5", 0)
         }
-        # Объединяем статические и динамические параметры
+        # Merge static and dynamic parameters.
         placeholders = {**analysis_static, **dynamic_part}
         system_prompt = parse_prompt(system_prompt_raw, placeholders)
         user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
-        if st.session_state.debug:
-            st.info(f"Поток обрабатывает запись {idx}")
-            st.write(record)
-            st.info("System prompt (анализ):")
-            st.write(system_prompt)
-            st.info("User prompt (анализ):")
-            st.write(user_prompt)
+        if debug:
+            print(f"[DEBUG] Processing record {idx}")
+            print(f"[DEBUG] System prompt: {system_prompt}")
+            print(f"[DEBUG] User prompt: {user_prompt}")
 
+        # Call the OpenAI API.
         generated_data = openai_chat(system_prompt, user_prompt, file_messages=file_messages)
-
-        if st.session_state.debug:
-            st.info("Сгенерированный ответ:")
-            st.write(generated_data)
-
+        # Upload the result to Airtable.
         upload_to_airtable(generated_data, "Responses")
-
+        results.append((idx, generated_data))
+    return results
 
 def parallel_analyze_ad(num_threads):
-
-    if "debug" not in st.session_state:
-        st.session_state["debug"] = False
-
+    # Capture required values from st.session_state in the main thread.
     persons = st.session_state.get("selected_persons", [])
     if not persons:
         st.error("Нет отобранных персон. Пожалуйста, отберите персоны сначала.")
@@ -339,23 +334,21 @@ def parallel_analyze_ad(num_threads):
         st.error("Количество потоков должно быть не менее 1")
         return
 
-    # Определяем размер порции для каждого потока
+    # Determine work splits.
     chunk_size = total_persons // num_threads
     remainder = total_persons % num_threads
 
-    if st.session_state.debug:
-        st.info(f"Запуск параллельного анализа с {num_threads} потоками. Каждому потоку достается примерно {chunk_size} записей, остаток: {remainder}")
-
-    # Получаем системный и пользовательский промты
+    # Get the debug flag and other parameters from session state.
+    debug = st.session_state.get("debug", False)
     response_test_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    if st.session_state.debug:
+    if debug:
         system_prompt_raw = st.session_state.get("analysis_system_prompt", "")
         user_prompt_raw = st.session_state.get("analysis_user_prompt", "")
     else:
         system_prompt_raw = get_file_from_github("ad_analysis_system.promt")
         user_prompt_raw = get_file_from_github("ad_analysis.promt")
 
-    # Формируем список файлов, если они загружены
+    # Prepare file messages.
     uploaded_files = st.session_state.get("analysis_uploaded_files", [])
     file_messages = []
     for fdict in uploaded_files:
@@ -364,7 +357,8 @@ def parallel_analyze_ad(num_threads):
             "image_url": {"url": fdict["content"]}
         })
 
-    # Статические параметры для анализа (например, описание рекламы и т.п.)
+    # Prepare static analysis parameters.
+    # (These global variables should be defined in your file.)
     analysis_static = {
         "model_name": model_name,
         "ad_name": ad_name,
@@ -375,12 +369,11 @@ def parallel_analyze_ad(num_threads):
         "free_question": free_question
     }
 
-    # Запускаем обработку в нескольких потоках
+    results = []
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         futures = []
         start = 0
         for i in range(num_threads):
-            # Для распределения остатка можно добавить по одной записи первичным потокам
             extra = 1 if i < remainder else 0
             end = start + chunk_size + extra
             futures.append(
@@ -392,17 +385,18 @@ def parallel_analyze_ad(num_threads):
                     system_prompt_raw,
                     user_prompt_raw,
                     file_messages,
-                    analysis_static
+                    analysis_static,
+                    debug
                 )
             )
-            if st.session_state.debug:
-                st.info(f"Поток {i+1} обрабатывает записи с {start} по {end - 1}")
+            if debug:
+                print(f"[DEBUG] Thread {i+1} processing records {start} to {end-1}")
             start = end
-        # Ждем завершения всех потоков
         for future in futures:
-            future.result()
+            results.extend(future.result())
 
     st.success("Анализ успешно завершен!")
+    return results
 
 def analyze_ad():
     st.write("Анализ рекламы")
