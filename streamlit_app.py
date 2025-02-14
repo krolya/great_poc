@@ -624,6 +624,10 @@ def show_analysis_tab():
     st.subheader("Отбор аудитории")
     if st.button("Отобрать персоны", key="select_persons_button"):
         formula = build_analysis_formula()
+
+        if st.session_state.debug:
+            st.write(formula)
+            
         records = fetch_analysis_records(formula, page_size=100, max_records=1000)
         data_for_table = []
         for r in records:
