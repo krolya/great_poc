@@ -948,7 +948,7 @@ def show_filters_tab_analysis():
     with st.expander("Основные настройки", expanded=True):
         number_of_persons_analysis = st.slider(
             "Количество персон для анализа", 
-            0, 100, 20, 
+            0, 1000, 20, 
             key="slider_num_persons_analysis"
         )
 
