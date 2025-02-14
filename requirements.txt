@@ -1,3 +1,2 @@
 openai
 pyairtable
-concurrent.futures
