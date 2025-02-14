@@ -653,8 +653,8 @@ def show_analysis_tab():
     st.subheader("Анализ рекламы")
     ad_name = st.text_input("Название рекламы", placeholder="Введите название рекламы", key="ad_name_input")  # новое поле
     ad_description = st.text_input("Описание рекламы", placeholder="Введите максимально полное описание рекламы", key="ad_description_input")
-    audio_description = st.text_input("Аудио описание", placeholder="Введите аудио описание рекламы", key="ad_audio_description_input")
-    metadata_description = st.text_input("Метаданные", placeholder="Введите метаданные рекламы", key="ad_metadata_description_input")
+    audio_description = st.text_input("Основная идея для рекламного ролика", placeholder="Введите jсновную идею для рекламного ролика", key="ad_audio_description_input")
+    metadata_description = st.text_input("Описание кадров", placeholder="Введите описание кадров", key="ad_metadata_description_input")
     message = st.text_input("Целевое сообщение рекламы", placeholder="Введите основной месседж для проверки", key="ad_message_input")
     free_question = st.text_input(
         "Введите свободный вопрос", placeholder="Введите свободный вопрос, который вы хотите задать персоне",
