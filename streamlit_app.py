@@ -791,7 +791,7 @@ def show_analysis_tab():
         if st.session_state.debug:
             st.write(formula)
 
-        records = fetch_analysis_records(formula, page_size=100, max_records=1000)
+        records = fetch_analysis_records(formula, page_size=100, max_records=number_of_persons_analysis)
         data_for_table = []
         for r in records:
             fields = r.get("fields", {})
