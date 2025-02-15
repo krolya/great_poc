@@ -1094,6 +1094,9 @@ def main():
 
     tab1, tab2, tab3, tab4 = st.tabs(["Генерация персон", "Аналитика", "Анализ ответов", "Настройки"])
 
+    if "debug" not in st.session_state:
+        st.session_state.debug = False
+
     with tab1:
         col_left, col_right = st.columns([3, 7])
         with col_left:
