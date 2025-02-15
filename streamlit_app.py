@@ -277,12 +277,12 @@ def generate_person():
 # Анализ
 # -------------------
 # --- Bare mode parallel analysis functions ---
-def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, nebius_api_key: str, file_messages=None, debug=False) -> str:
+def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, nebius_api_key: str, json_schema: dict, file_messages=None, debug=False) -> str:
     """
-    Bare mode версия функции для запроса OpenAI, не зависящая от контекста Streamlit.
-    Секреты API передаются напрямую через параметры.
+    Bare mode версия функции для запроса OpenAI с использованием предоставленной json_schema.
+    Секреты для OpenAI передаются напрямую через параметры.
     """
-    from openai import OpenAI  # Импортируем класс OpenAI
+    from openai import OpenAI
 
     global model_name
     if "deepseek" not in model_name.lower():
@@ -295,7 +295,6 @@ def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, 
 
     messages = [{"role": "system", "content": system_prompt}]
     if file_messages:
-        # Если переданы файлы, комбинируем текст и файлы в одном сообщении
         user_content = [{"type": "text", "text": user_prompt}] + file_messages
         messages.append({"role": "user", "content": user_content})
     else:
@@ -304,7 +303,10 @@ def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, 
     completion = client.chat.completions.create(
         model=model_name,
         messages=messages,
-        response_format={"type": "json_object"}
+        response_format={
+            "type": "json_schema",
+            "json_schema": json_schema
+        }
     )
 
     if debug:
@@ -336,18 +338,19 @@ def upload_to_airtable_bare(data: str, airtable_api_token: str, airtable_base_id
 
 def analyze_ad_chunk(start_index, end_index, response_test_id: str, persons: list,
                        system_prompt_raw: str, user_prompt_raw: str, file_messages, 
-                       analysis_static: dict, openai_api_key: str, nebius_api_key: str,
-                       airtable_api_token: str, airtable_base_id: str, debug: bool = False):
+                       analysis_static: dict, json_schema: dict,
+                       openai_api_key: str, nebius_api_key: str,
+                       airtable_api_token: str, airtable_base_id: str, debug: bool = False) -> int:
     """
-    Обрабатывает срез записей (персон) без использования Streamlit UI.
-    Формирует промпты для каждой записи и получает сгенерированные ответы
-    посредством вызова openai_chat_bare, при этом секреты передаются через параметры.
-    
-    Возвращает список кортежей: (индекс записи, сгенерированный ответ).
+    Обрабатывает срез записей (от start_index до end_index) без использования Streamlit UI.
+    Для каждой записи:
+      - формирует промпты с подстановкой динамических и статических параметров,
+      - получает сгенерированный ответ через openai_chat_bare (использующий json_schema),
+      - загружает данные в Airtable через upload_to_airtable_bare.
+    Возвращает число обработанных записей.
     """
-    results = []
+    processed_count = 0
     for idx, record in enumerate(persons[start_index:end_index], start=start_index):
-        # Собираем динамические данные из каждой записи
         dynamic_part = {
             "response_test_id": response_test_id,
             "record_id": record.get("Record ID", ""),
@@ -370,20 +373,31 @@ def analyze_ad_chunk(start_index, end_index, response_test_id: str, persons: lis
         system_prompt = parse_prompt(system_prompt_raw, placeholders)
         user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
-        # Вызываем функцию openai_chat_bare с передачей секретов из analyze_ad_chunk
-        generated_data = openai_chat_bare(system_prompt, user_prompt, openai_api_key, nebius_api_key, file_messages=file_messages, debug=debug)
-
-        # Загружаем полученные данные в Airtable через bare mode функцию upload_to_airtable_bare
-        upload_count = upload_to_airtable_bare(generated_data, airtable_api_token, airtable_base_id, table_name="Responses", debug=debug)
+        generated_data = openai_chat_bare(
+            system_prompt,
+            user_prompt,
+            openai_api_key,
+            nebius_api_key,
+            json_schema,
+            file_messages=file_messages,
+            debug=debug
+        )
         
-        print(f"Uploaded {upload_count} records to airtable")
-
-        results.append((idx, generated_data))
-    
-    return results
+        upload_to_airtable_bare(
+            generated_data,
+            airtable_api_token,
+            airtable_base_id,
+            table_name="Responses",
+            debug=debug
+        )
+        
+        processed_count += 1
+    if debug:
+        print(f"Chunk processed: {processed_count} records from index {start_index} to {end_index - 1}")
+    return processed_count
 
 def parallel_analyze_ad(num_threads):
-    # Capture required values from st.session_state in the main thread.
+    # Извлекаем список персон из st.session_state
     persons = st.session_state.get("selected_persons", [])
     if not persons:
         st.error("Нет отобранных персон. Пожалуйста, отберите персоны сначала.")
@@ -394,11 +408,18 @@ def parallel_analyze_ad(num_threads):
         st.error("Количество потоков должно быть не менее 1")
         return
 
-    # Determine work splits.
-    chunk_size = total_persons // num_threads
-    remainder = total_persons % num_threads
+    # Скачиваем JSON-схему один раз
+    import json
+    ad_analysis_schema_str = get_file_from_github("ad_analysis.json")
+    json_schema = json.loads(ad_analysis_schema_str)
 
-    # Get the debug flag and other parameters from session state.
+    # Определяем число персон для анализа и начальный индекс
+    number_of_persons_analysis = st.session_state.get("number_of_persons_analysis", 20)
+    start_index = st.session_state.get("analysis_start_index", 0)
+    available = len(persons) - start_index
+    total_to_process = min(number_of_persons_analysis, available)
+
+    # Готовим параметры для анализа
     debug = st.session_state.get("debug", False)
     response_test_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     if debug:
@@ -408,7 +429,6 @@ def parallel_analyze_ad(num_threads):
         system_prompt_raw = get_file_from_github("ad_analysis_system.promt")
         user_prompt_raw = get_file_from_github("ad_analysis.promt")
 
-    # Prepare file messages.
     uploaded_files = st.session_state.get("analysis_uploaded_files", [])
     file_messages = []
     for fdict in uploaded_files:
@@ -417,8 +437,7 @@ def parallel_analyze_ad(num_threads):
             "image_url": {"url": fdict["content"]}
         })
 
-    # Prepare static analysis parameters.
-    # (These global variables should be defined in your file.)
+    # Статические параметры для анализа
     analysis_static = {
         "model_name": model_name,
         "ad_name": ad_name,
@@ -429,23 +448,29 @@ def parallel_analyze_ad(num_threads):
         "free_question": free_question
     }
 
-    results = []
+    # Распределяем записи между потоками
+    chunk_size = total_to_process // num_threads
+    remainder = total_to_process % num_threads
+
+    processed_total = 0
+    from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         futures = []
-        start = 0
+        current_start = start_index
         for i in range(num_threads):
             extra = 1 if i < remainder else 0
-            end = start + chunk_size + extra
+            current_end = current_start + chunk_size + extra
             futures.append(
                 executor.submit(
-                     analyze_ad_chunk,
-                    start, end,
+                    analyze_ad_chunk,
+                    current_start, current_end,
                     response_test_id,
                     persons,
                     system_prompt_raw,
                     user_prompt_raw,
                     file_messages,
                     analysis_static,
+                    json_schema,
                     st.secrets.OPENAI_API_KEY,   # Секрет для OpenAI
                     st.secrets.NEBIUS_API_KEY,     # Секрет для Nebius (если используется)
                     st.secrets.AIRTABLE_API_TOKEN, # Секрет для Airtable
@@ -453,15 +478,14 @@ def parallel_analyze_ad(num_threads):
                     debug
                 )
             )
-            
-            print(f"Thread {i+1} processing records {start} to {end-1}")
+            print(f"[DEBUG] Thread {i+1} processing records from {current_start} to {current_end - 1}")
+            current_start = current_end
 
-            start = end
+        # Суммируем число обработанных записей, полученных из потоков
         for future in futures:
-            results.extend(future.result())
+            processed_total += future.result()
 
-    st.success("Анализ успешно завершен!")
-    return results
+    st.success(f"Анализ успешно завершён! Всего обработано {processed_total} записей.")
 
 def analyze_ad():
     st.write("Анализ рекламы")

@@ -1,0 +1,103 @@
+{
+  "name": "my_schema",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "records": {
+        "type": "array",
+        "description": "A list of records containing responses to the ads.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "Persona": {
+              "type": "array",
+              "description": "ID of the persona answering the questions.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "Ad name": {
+              "type": "string",
+              "description": "Name of the advertisement for further grouping of tests."
+            },
+            "Response test ID": {
+              "type": "string",
+              "description": "Unique identifier for the test."
+            },
+            "Response clarity score": {
+              "type": "number",
+              "description": "Clarity score of the advertisement, ranging from 0 to 100."
+            },
+            "Response clarity description": {
+              "type": "string",
+              "description": "Comment regarding the clarity score."
+            },
+            "Response likeability score": {
+              "type": "number",
+              "description": "Likeability score of the advertisement, ranging from 0 to 100."
+            },
+            "Response likeability description": {
+              "type": "string",
+              "description": "Comment regarding the likeability score."
+            },
+            "Response trust score": {
+              "type": "number",
+              "description": "Trust score for the advertisement, ranging from 0 to 100."
+            },
+            "Response trust description": {
+              "type": "string",
+              "description": "Comment regarding the trust score."
+            },
+            "Response diversity score": {
+              "type": "number",
+              "description": "Diversity score, indicating how much the ad differs from competitors, ranging from 0 to 100."
+            },
+            "Response diversity description": {
+              "type": "string",
+              "description": "Comment regarding the diversity score."
+            },
+            "Response message score": {
+              "type": "number",
+              "description": "Message score, indicating if the message is conveyed, ranging from 0 to 100."
+            },
+            "Response message description": {
+              "type": "string",
+              "description": "Comment regarding whether the message was conveyed."
+            },
+            "Response free question 1": {
+              "type": "string",
+              "description": "Response to the free question."
+            },
+            "Response description": {
+              "type": "string",
+              "description": "Overall comment summarizing the impression of the advertisement and responses."
+            }
+          },
+          "required": [
+            "Persona",
+            "Ad name",
+            "Response test ID",
+            "Response clarity score",
+            "Response clarity description",
+            "Response likeability score",
+            "Response likeability description",
+            "Response trust score",
+            "Response trust description",
+            "Response diversity score",
+            "Response diversity description",
+            "Response message score",
+            "Response message description",
+            "Response free question 1",
+            "Response description"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "records"
+    ],
+    "additionalProperties": false
+  },
+  "strict": true
+}
