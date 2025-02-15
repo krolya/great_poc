@@ -312,8 +312,32 @@ def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, 
 
     return completion.choices[0].message.content
 
+def upload_to_airtable_bare(data: str, airtable_api_token: str, airtable_base_id: str, table_name: str = "Responses", debug: bool = False) -> int:
+    """
+    Bare mode версия функции загрузки данных в Airtable.
+    Секреты передаются через параметры.
+    """
+    import json
+    from pyairtable import Api
 
-def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_prompt_raw, user_prompt_raw, file_messages, analysis_static, openai_api_key, nebius_api_key, debug=False):
+    api = Api(airtable_api_token)
+    table = api.table(airtable_base_id, table_name)
+    
+    if debug:
+        print("Uploading data to Airtable...")
+    
+    records = json.loads(data)
+    response = table.batch_create(records["records"])
+    
+    if debug:
+        print("Airtable response:", response)
+    
+    return len(response)
+
+def analyze_ad_chunk(start_index, end_index, response_test_id: str, persons: list,
+                       system_prompt_raw: str, user_prompt_raw: str, file_messages, 
+                       analysis_static: dict, openai_api_key: str, nebius_api_key: str,
+                       airtable_api_token: str, airtable_base_id: str, debug: bool = False):
     """
     Обрабатывает срез записей (персон) без использования Streamlit UI.
     Формирует промпты для каждой записи и получает сгенерированные ответы
@@ -348,6 +372,10 @@ def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_p
 
         # Вызываем функцию openai_chat_bare с передачей секретов из analyze_ad_chunk
         generated_data = openai_chat_bare(system_prompt, user_prompt, openai_api_key, nebius_api_key, file_messages=file_messages, debug=debug)
+
+        # Загружаем полученные данные в Airtable через bare mode функцию upload_to_airtable_bare
+        upload_count = upload_to_airtable_bare(generated_data, airtable_api_token, airtable_base_id, table_name="Responses", debug=debug)
+        
         results.append((idx, generated_data))
     return results
 
@@ -407,7 +435,7 @@ def parallel_analyze_ad(num_threads):
             end = start + chunk_size + extra
             futures.append(
                 executor.submit(
-                    analyze_ad_chunk,
+                     analyze_ad_chunk,
                     start, end,
                     response_test_id,
                     persons,
@@ -415,8 +443,10 @@ def parallel_analyze_ad(num_threads):
                     user_prompt_raw,
                     file_messages,
                     analysis_static,
-                    st.secrets.OPENAI_API_KEY,
-                    st.secrets.NEBIUS_API_KEY,
+                    st.secrets.OPENAI_API_KEY,   # Секрет для OpenAI
+                    st.secrets.NEBIUS_API_KEY,     # Секрет для Nebius (если используется)
+                    st.secrets.AIRTABLE_API_TOKEN, # Секрет для Airtable
+                    st.secrets.AIRTABLE_BASE_ID,   # Базовый ID Airtable
                     debug
                 )
             )
