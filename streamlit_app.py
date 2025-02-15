@@ -542,7 +542,6 @@ def analyze_ad():
             user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
             if st.session_state.debug:
-                st.info(f"Analyzing record #{analyzed_count} (индекс {idx})")
                 st.write(record)
                 st.info("System prompt (анализ):")
                 st.write(system_prompt)
@@ -556,6 +555,7 @@ def analyze_ad():
                 st.write(generated_data)
 
             upload_to_airtable(generated_data, "Responses")
+            st.info(f"Analyzing record #{analyzed_count} (индекс {idx})")
 
     st.success("Анализ успешно завершен!")
 
