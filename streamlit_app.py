@@ -787,6 +787,18 @@ def show_response_analysis_tab():
             display_responses(selected_ad_name, selected_response_test_ids)
 
 
+def show_reports_tab():
+    """
+    Функция отображает закладку "Отчеты" с заголовком и списком ссылок.
+    """
+    st.header("Отчеты")
+    st.markdown("[Общее сравнение](https://airtable.com/appUEREr4qQKijWHj/pagmukohH44WLke2e)")
+    st.markdown("[Аудитория](https://airtable.com/appUEREr4qQKijWHj/pagUmHJuLBx2k2w5I?m5gWv=allRecords)")
+    st.markdown("[Идея 1. Все очень](https://airtable.com/appUEREr4qQKijWHj/pagNgUjhqJ3qpjau7)")
+    st.markdown("[Идея 2. Всегда освежает](https://airtable.com/appUEREr4qQKijWHj/pagLZGRaLwN2HCp3R)")
+    st.markdown("[Идея 3. Впечатляет, освежает](https://airtable.com/appUEREr4qQKijWHj/pagUGBlT3g5cwnnSf)")
+    st.markdown("[Идея 4. Открывайте квас снова и снова](https://airtable.com/appUEREr4qQKijWHj/pagkBBGPln1WZY2sz)")
+
 
 def show_generation_tab():
     global number_of_persons, gender_ratio, age_range, income_selected, education_selected
@@ -1150,7 +1162,7 @@ def show_filters_tab_analysis():
 def main():
     st.set_page_config(page_title="Более нормальный человек", layout="wide")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Генерация персон", "Аналитика", "Анализ ответов", "Настройки"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Генерация персон", "Аналитика", "Анализ ответов","Отчеты", "Настройки"])
 
     if "debug" not in st.session_state:
         st.session_state.debug = False
@@ -1173,6 +1185,9 @@ def main():
         show_response_analysis_tab()
 
     with tab4:
+        show_reports_tab()
+        
+    with tab5:
         st.checkbox("Выводить отладочную информацию", key="debug")
 
 if __name__ == "__main__":
