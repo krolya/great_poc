@@ -376,7 +376,10 @@ def analyze_ad_chunk(start_index, end_index, response_test_id: str, persons: lis
         # Загружаем полученные данные в Airtable через bare mode функцию upload_to_airtable_bare
         upload_count = upload_to_airtable_bare(generated_data, airtable_api_token, airtable_base_id, table_name="Responses", debug=debug)
         
+        print(f"Uploaded {upload_count} records to airtable")
+
         results.append((idx, generated_data))
+    
     return results
 
 def parallel_analyze_ad(num_threads):
@@ -450,8 +453,9 @@ def parallel_analyze_ad(num_threads):
                     debug
                 )
             )
-            if debug:
-                print(f"[DEBUG] Thread {i+1} processing records {start} to {end-1}")
+            
+            print(f"Thread {i+1} processing records {start} to {end-1}")
+
             start = end
         for future in futures:
             results.extend(future.result())
