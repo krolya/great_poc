@@ -1092,10 +1092,6 @@ def show_filters_tab_analysis():
 def main():
     st.set_page_config(page_title="Более нормальный человек", layout="wide")
 
-    if "debug" not in st.session_state:
-        st.session_state["debug"] = False
-
-
     tab1, tab2, tab3, tab4 = st.tabs(["Генерация персон", "Аналитика", "Анализ ответов", "Настройки"])
 
     with tab1:
