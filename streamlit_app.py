@@ -277,16 +277,53 @@ def generate_person():
 # Анализ
 # -------------------
 # --- Bare mode parallel analysis functions ---
-def analyze_ad_chunk(start_index, end_index, response_test_id, persons,
-                       system_prompt_raw, user_prompt_raw, file_messages,
-                       analysis_static, debug=False):
+def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, nebius_api_key: str, file_messages=None, debug=False) -> str:
     """
-    Processes a slice of records without using any Streamlit UI calls.
-    Returns a list of (index, generated_data) tuples.
+    Bare mode версия функции для запроса OpenAI, не зависящая от контекста Streamlit.
+    Секреты API передаются напрямую через параметры.
+    """
+    from openai import OpenAI  # Импортируем класс OpenAI
+
+    global model_name
+    if "deepseek" not in model_name.lower():
+        client = OpenAI(api_key=openai_api_key)
+    else:
+        client = OpenAI(
+            base_url="https://api.studio.nebius.ai/v1/",
+            api_key=nebius_api_key,
+        )
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if file_messages:
+        # Если переданы файлы, комбинируем текст и файлы в одном сообщении
+        user_content = [{"type": "text", "text": user_prompt}] + file_messages
+        messages.append({"role": "user", "content": user_content})
+    else:
+        messages.append({"role": "user", "content": user_prompt})
+
+    completion = client.chat.completions.create(
+        model=model_name,
+        messages=messages,
+        response_format={"type": "json_object"}
+    )
+
+    if debug:
+        print("OpenAI response:", completion.choices[0].message.content)
+
+    return completion.choices[0].message.content
+
+
+def analyze_ad_chunk(start_index, end_index, response_test_id, persons, system_prompt_raw, user_prompt_raw, file_messages, analysis_static, openai_api_key, nebius_api_key, debug=False):
+    """
+    Обрабатывает срез записей (персон) без использования Streamlit UI.
+    Формирует промпты для каждой записи и получает сгенерированные ответы
+    посредством вызова openai_chat_bare, при этом секреты передаются через параметры.
+    
+    Возвращает список кортежей: (индекс записи, сгенерированный ответ).
     """
     results = []
     for idx, record in enumerate(persons[start_index:end_index], start=start_index):
-        # Build dynamic part for this record.
+        # Собираем динамические данные из каждой записи
         dynamic_part = {
             "response_test_id": response_test_id,
             "record_id": record.get("Record ID", ""),
@@ -305,20 +342,12 @@ def analyze_ad_chunk(start_index, end_index, response_test_id, persons,
             "children_age_4": record.get("Children age 4", 0),
             "children_age_5": record.get("Children age 5", 0)
         }
-        # Merge static and dynamic parameters.
         placeholders = {**analysis_static, **dynamic_part}
         system_prompt = parse_prompt(system_prompt_raw, placeholders)
         user_prompt = parse_prompt(user_prompt_raw, placeholders)
 
-        if debug:
-            print(f"[DEBUG] Processing record {idx}")
-            print(f"[DEBUG] System prompt: {system_prompt}")
-            print(f"[DEBUG] User prompt: {user_prompt}")
-
-        # Call the OpenAI API.
-        generated_data = openai_chat(system_prompt, user_prompt, file_messages=file_messages)
-        # Upload the result to Airtable.
-        upload_to_airtable(generated_data, "Responses")
+        # Вызываем функцию openai_chat_bare с передачей секретов из analyze_ad_chunk
+        generated_data = openai_chat_bare(system_prompt, user_prompt, openai_api_key, nebius_api_key, file_messages=file_messages, debug=debug)
         results.append((idx, generated_data))
     return results
 
@@ -386,6 +415,8 @@ def parallel_analyze_ad(num_threads):
                     user_prompt_raw,
                     file_messages,
                     analysis_static,
+                    st.secrets.OPENAI_API_KEY,
+                    st.secrets.NEBIUS_API_KEY,
                     debug
                 )
             )
