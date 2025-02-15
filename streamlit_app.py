@@ -555,7 +555,7 @@ def analyze_ad():
                 st.write(generated_data)
 
             upload_to_airtable(generated_data, "Responses")
-            st.info(f"Analyzing record #{analyzed_count} (индекс {idx})")
+            st.info(f"Processed record #{analyzed_count} (индекс {idx})")
 
     st.success("Анализ успешно завершен!")
 
