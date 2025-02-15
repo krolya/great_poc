@@ -1186,7 +1186,7 @@ def main():
 
     with tab4:
         show_reports_tab()
-        
+
     with tab5:
         st.checkbox("Выводить отладочную информацию", key="debug")
 
