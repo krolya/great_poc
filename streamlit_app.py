@@ -414,7 +414,7 @@ def parallel_analyze_ad(num_threads):
     json_schema = json.loads(ad_analysis_schema_str)
 
     # Определяем число персон для анализа и начальный индекс
-    number_of_persons_analysis = st.session_state.get("number_of_persons_analysis", 20)
+    number_of_persons_analysis = st.session_state.get("number_of_persons_analysis", 100)
     start_index = st.session_state.get("analysis_start_index", 0)
     available = len(persons) - start_index
     total_to_process = min(number_of_persons_analysis, available)
