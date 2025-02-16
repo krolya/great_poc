@@ -792,12 +792,12 @@ def show_reports_tab():
     Функция отображает закладку "Отчеты" с заголовком и списком ссылок.
     """
     st.header("Отчеты")
-    st.markdown("[Общее сравнение](https://airtable.com/appUEREr4qQKijWHj/pagmukohH44WLke2e)")
-    st.markdown("[Аудитория](https://airtable.com/appUEREr4qQKijWHj/pagUmHJuLBx2k2w5I?m5gWv=allRecords)")
-    st.markdown("[Идея 1. Все очень](https://airtable.com/appUEREr4qQKijWHj/pagNgUjhqJ3qpjau7)")
-    st.markdown("[Идея 2. Всегда освежает](https://airtable.com/appUEREr4qQKijWHj/pagLZGRaLwN2HCp3R)")
-    st.markdown("[Идея 3. Впечатляет, освежает](https://airtable.com/appUEREr4qQKijWHj/pagUGBlT3g5cwnnSf)")
-    st.markdown("[Идея 4. Открывайте квас снова и снова](https://airtable.com/appUEREr4qQKijWHj/pagkBBGPln1WZY2sz)")
+    st.markdown("[Общее сравнение](https://airtable.com/appUEREr4qQKijWHj/shrWpCNYxuVH85jST)")
+    st.markdown("[Аудитория](https://airtable.com/appUEREr4qQKijWHj/shrpv5N42OvDsEjtE)")
+    st.markdown("[Идея 1. Все очень](https://airtable.com/appUEREr4qQKijWHj/shrLtfMjdaDotTYd9)")
+    st.markdown("[Идея 2. Всегда освежает](https://airtable.com/appUEREr4qQKijWHj/shr96HXkEdAhALDQQ)")
+    st.markdown("[Идея 3. Впечатляет, освежает](https://airtable.com/appUEREr4qQKijWHj/shrrLUqrzb8A8vyre)")
+    st.markdown("[Идея 4. Открывайте квас снова и снова](https://airtable.com/appUEREr4qQKijWHj/shrVJy2pGZkdHKLlL)")
 
 
 def show_generation_tab():
