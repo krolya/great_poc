@@ -3,6 +3,7 @@ import json
 import datetime
 import requests
 import itertools
+import base64
 
 from openai import OpenAI
 from pyairtable import Api
