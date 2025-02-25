@@ -112,7 +112,7 @@ def save_file_to_github(content: dict, file_path: str):
     response = requests.get(url, headers=headers)
     sha = response.json().get("sha", "") if response.status_code == 200 else ""
     
-    # Преобразуем JSON в строку и затем в base64
+    # Преобразуем JSON в строку с корректными переносами строк
     json_content = json.dumps(content, indent=4, ensure_ascii=False)
     base64_content = base64.b64encode(json_content.encode("utf-8")).decode("utf-8")
     
