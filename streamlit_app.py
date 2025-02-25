@@ -117,9 +117,8 @@ def save_file_to_github(content: dict, file_path: str):
     data = {
         "message": "Upload Airtable schema",
         "content": base64_content,
+        "sha": sha if sha else ""
     }
-    if sha:
-        data["sha"] = sha  # Добавляем SHA для обновления файла
     
     response = requests.put(url, headers=headers, json=data)
     if response.status_code not in [200, 201]:
