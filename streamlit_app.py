@@ -95,24 +95,37 @@ def get_file_from_github(file_path: str) -> str:
     response.raise_for_status()
     return response.text
 
-def save_file_to_github(content: str, file_path: str):
+def save_file_to_github(content: dict, file_path: str):
     url = f"https://api.github.com/repos/krolya/great_poc/contents/{file_path}"
     headers = {
         "Authorization": f"Bearer {st.secrets.GITHUB_API_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     
+    # Проверяем токен
+    auth_check = requests.get("https://api.github.com/user", headers=headers)
+    if auth_check.status_code != 200:
+        st.error("Ошибка: Недействительный GitHub токен или недостаточно прав!")
+        return
+    
     response = requests.get(url, headers=headers)
     sha = response.json().get("sha", "") if response.status_code == 200 else ""
     
+    # Преобразуем JSON в строку и затем в base64
+    json_content = json.dumps(content, indent=4, ensure_ascii=False)
+    base64_content = base64.b64encode(json_content.encode("utf-8")).decode("utf-8")
+    
     data = {
         "message": "Upload Airtable schema",
-        "content": json.dumps(content, indent=4, ensure_ascii=False).encode("utf-8").decode("utf-8"),
+        "content": base64_content,
         "sha": sha
     }
     response = requests.put(url, headers=headers, json=data)
     if response.status_code not in [200, 201]:
-        raise Exception(f"Ошибка при загрузке на GitHub: {response.status_code}, {response.text}")
+        st.error(f"Ошибка при загрузке на GitHub: {response.status_code}, {response.text}")
+        return
+    
+    st.success("Файл успешно загружен на GitHub")
 
 # -------------------
 # Универсальная функция parse_prompt
