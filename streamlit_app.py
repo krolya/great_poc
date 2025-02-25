@@ -61,12 +61,21 @@ def get_airtable_schema():
     }
 
     for table in schema.tables:
+        # Выводим отладочную информацию по таблице
+        if st.session_state.debug:
+            st.write(f"[DEBUG] Processing table: {table.name}")
+
         table_dict = {
             "name": table.name,
             "fields": []
         }
 
         for field in table.fields:
+            if st.session_state.debug:
+                st.write(f"[DEBUG] Field name: {field.name}")
+                st.write(f"[DEBUG] Field type: {field.type}")
+                st.write(f"[DEBUG] Field options: {field.options}")
+
             field_dict = {
                 "name": field.name,
                 "type": field.type
@@ -78,7 +87,9 @@ def get_airtable_schema():
                 # Если это multipleSelects, извлечём все варианты
                 if field.type == "multipleSelects":
                     if "choices" in field.options:
-                        # Сохраняем все доступные данные: id, name, color
+                        if st.session_state.debug:
+                            st.write(f"[DEBUG] multiSelect choices for {field.name}:", field.options["choices"])
+
                         field_dict["choices"] = [
                             {
                                 "id": choice.get("id"),
@@ -91,6 +102,9 @@ def get_airtable_schema():
                 # Если это singleSelect, аналогично обрабатываем choices
                 elif field.type == "singleSelect":
                     if "choices" in field.options:
+                        if st.session_state.debug:
+                            st.write(f"[DEBUG] singleSelect choices for {field.name}:", field.options["choices"])
+
                         field_dict["choices"] = [
                             {
                                 "id": choice.get("id"),
@@ -104,6 +118,10 @@ def get_airtable_schema():
             table_dict["fields"].append(field_dict)
 
         schema_dict["tables"].append(table_dict)
+
+    if st.session_state.debug:
+        st.write("[DEBUG] Final schema_dict:")
+        st.json(schema_dict)
 
     return schema_dict
 
