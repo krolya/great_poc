@@ -71,11 +71,12 @@ def get_airtable_schema():
             
             if hasattr(field, "options") and isinstance(field.options, dict):
                 field_dict["options"] = field.options
-                
-                # Обрабатываем multiSelect значения
-                if field.type == "multipleSelects" and "choices" in field.options:
+
+                # Обрабатываем варианты (choices) как для multipleSelects, так и для singleSelect
+                if "choices" in field.options:
+                    # Это именно список возможных вариантов (Choice 1, Choice 2 и т.д.)
                     field_dict["choices"] = [choice["name"] for choice in field.options["choices"]]
-            
+
             table_dict["fields"].append(field_dict)
         
         schema_dict["tables"].append(table_dict)
@@ -100,35 +101,51 @@ def get_file_from_github(file_path: str) -> str:
     return response.text
 
 def save_file_to_github(content: dict, file_path: str):
+    """
+    Сохраняет (создает/обновляет) файл в репозитории GitHub на ветке main.
+    Использует SHA для обновления, если файл уже есть.
+    """
     url = f"https://api.github.com/repos/krolya/great_poc/contents/{file_path}"
     headers = {
         "Authorization": f"Bearer {st.secrets.GITHUB_API_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     
+    # Проверяем токен
     auth_check = requests.get("https://api.github.com/user", headers=headers)
     if auth_check.status_code != 200:
         st.error("Ошибка: Недействительный GitHub токен или недостаточно прав!")
         return
     
-    response = requests.get(url, headers=headers)
-    sha = response.json().get("sha", None) if response.status_code == 200 else None
+    # Получаем SHA, если файл существует
+    get_resp = requests.get(url, headers=headers)
+    if get_resp.status_code == 200:
+        sha = get_resp.json().get("sha", "")
+    else:
+        sha = ""
     
+    # Преобразуем контент в Base64
     json_content = json.dumps(content, indent=4, ensure_ascii=False)
     base64_content = base64.b64encode(json_content.encode("utf-8")).decode("utf-8")
-    
+
     data = {
         "message": "Upload Airtable schema",
         "content": base64_content,
-        "sha": sha if sha else ""
+        "branch": "main",       # Явно указываем ветку
     }
-    
-    response = requests.put(url, headers=headers, json=data)
-    if response.status_code not in [200, 201]:
-        st.error(f"Ошибка при загрузке на GitHub: {response.status_code}, {response.text}")
+    if sha:
+        data["sha"] = sha       # Нужно для обновления существующего файла
+
+    put_resp = requests.put(url, headers=headers, json=data)
+
+    # Логируем ответ для отладки
+    st.write("PUT response:", put_resp.status_code, put_resp.text)
+
+    if put_resp.status_code not in [200, 201]:
+        st.error(f"Ошибка при загрузке на GitHub: {put_resp.status_code}, {put_resp.text}")
         return
     
-    st.success("Файл успешно загружен на GitHub и обновлён")
+    st.success("Файл успешно загружен (создан/обновлён) на GitHub!")
 
 # -------------------
 # Универсальная функция parse_prompt
