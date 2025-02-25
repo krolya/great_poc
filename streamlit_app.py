@@ -53,8 +53,22 @@ analysis_tags_selected = []
 def get_airtable_schema():
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     base_id = st.secrets.AIRTABLE_BASE_ID
-    tables = api.base(base_id).schema()
-    return tables
+    schema = api.base(base_id).schema()
+    
+    # Преобразуем объект schema в сериализуемый JSON
+    schema_dict = {
+        "tables": [
+            {
+                "name": table.name,
+                "fields": [
+                    {"name": field.name, "type": field.type, "options": field.options}
+                    for field in table.fields
+                ]
+            }
+            for table in schema.tables
+        ]
+    }
+    return schema_dict
 
 def upload_schema_to_airtable(schema):
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
