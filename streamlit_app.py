@@ -48,6 +48,22 @@ analysis_gender_selected = ["Мужской", "Женский"]  # добавл�
 analysis_tags_selected = []
 
 # -------------------
+# Функции загрузки/выгрузки схемы Airtable из GitHub
+# -------------------
+def get_airtable_schema():
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    base_id = st.secrets.AIRTABLE_BASE_ID
+    tables = api.base(base_id).schema()
+    return tables
+
+def upload_schema_to_airtable(schema):
+    api = Api(st.secrets.AIRTABLE_API_TOKEN)
+    base_id = st.secrets.AIRTABLE_BASE_ID
+    
+    for table in schema.get("tables", []):
+        api.table(base_id, table['name']).create(table)
+
+# -------------------
 # Функция загрузки файла из GitHub
 # -------------------
 def get_file_from_github(file_path: str) -> str:
@@ -56,6 +72,25 @@ def get_file_from_github(file_path: str) -> str:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.text
+
+def save_file_to_github(content: str, file_path: str):
+    url = f"https://api.github.com/repos/krolya/great_poc/contents/{file_path}"
+    headers = {
+        "Authorization": f"Bearer {st.secrets.GITHUB_API_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    response = requests.get(url, headers=headers)
+    sha = response.json().get("sha", "") if response.status_code == 200 else ""
+    
+    data = {
+        "message": "Upload Airtable schema",
+        "content": content.encode("utf-8").decode("utf-8"),
+        "sha": sha
+    }
+    response = requests.put(url, headers=headers, json=data)
+    if response.status_code not in [200, 201]:
+        raise Exception(f"Ошибка при загрузке на GitHub: {response.status_code}, {response.text}")
 
 # -------------------
 # Универсальная функция parse_prompt
@@ -1189,6 +1224,22 @@ def main():
 
     with tab5:
         st.checkbox("Выводить отладочную информацию", key="debug")
+
+        if st.session_state.debug:
+            st.subheader("Управление схемой Airtable")
+            file_path = "airtable_schema.json"
+            
+            if st.button("Выгрузить схему Airtable на GitHub"):
+                schema = get_airtable_schema()
+                save_file_to_github(json.dumps(schema, indent=4, ensure_ascii=False), file_path)
+                st.success("Схема успешно выгружена на GitHub")
+            
+            if st.button("Загрузить схему из GitHub в Airtable"):
+                if st.confirm("ВНИМАНИЕ! ОПАСНОСТЬ! Вы уверены, что хотите загрузить схему из GitHub в Airtable? Это может перезаписать текущую структуру данных."):
+                    schema_text = get_file_from_github(file_path)
+                    schema = json.loads(schema_text)
+                    upload_schema_to_airtable(schema)
+                    st.success("Схема успешно загружена в Airtable")
 
 if __name__ == "__main__":
     main()
