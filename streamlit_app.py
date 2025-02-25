@@ -56,7 +56,6 @@ def get_airtable_schema():
     base_id = st.secrets.AIRTABLE_BASE_ID
     schema = api.base(base_id).schema()
     
-    # Преобразуем объект schema в сериализуемый JSON
     schema_dict = {
         "tables": []
     }
@@ -72,6 +71,10 @@ def get_airtable_schema():
             
             if hasattr(field, "options") and isinstance(field.options, dict):
                 field_dict["options"] = field.options
+                
+                # Обрабатываем multiSelect значения
+                if field.type == "multipleSelects" and "choices" in field.options:
+                    field_dict["choices"] = [choice["name"] for choice in field.options["choices"]]
             
             table_dict["fields"].append(field_dict)
         
