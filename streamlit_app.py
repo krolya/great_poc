@@ -103,7 +103,6 @@ def save_file_to_github(content: dict, file_path: str):
         "Accept": "application/vnd.github.v3+json"
     }
     
-    # Проверяем токен
     auth_check = requests.get("https://api.github.com/user", headers=headers)
     if auth_check.status_code != 200:
         st.error("Ошибка: Недействительный GitHub токен или недостаточно прав!")
@@ -112,15 +111,16 @@ def save_file_to_github(content: dict, file_path: str):
     response = requests.get(url, headers=headers)
     sha = response.json().get("sha", "") if response.status_code == 200 else ""
     
-    # Преобразуем JSON в строку с корректными переносами строк
     json_content = json.dumps(content, indent=4, ensure_ascii=False)
     base64_content = base64.b64encode(json_content.encode("utf-8")).decode("utf-8")
     
     data = {
         "message": "Upload Airtable schema",
         "content": base64_content,
-        "sha": sha
     }
+    if sha:
+        data["sha"] = sha  # Добавляем SHA для обновления файла
+    
     response = requests.put(url, headers=headers, json=data)
     if response.status_code not in [200, 201]:
         st.error(f"Ошибка при загрузке на GitHub: {response.status_code}, {response.text}")
