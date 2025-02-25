@@ -69,7 +69,7 @@ def get_airtable_schema():
         for field in table.fields:
             field_dict = {"name": field.name, "type": field.type}
             
-            if hasattr(field, "options"):
+            if hasattr(field, "options") and isinstance(field.options, dict):
                 field_dict["options"] = field.options
             
             table_dict["fields"].append(field_dict)
