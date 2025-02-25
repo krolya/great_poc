@@ -109,7 +109,7 @@ def save_file_to_github(content: dict, file_path: str):
         return
     
     response = requests.get(url, headers=headers)
-    sha = response.json().get("sha", "") if response.status_code == 200 else ""
+    sha = response.json().get("sha", None) if response.status_code == 200 else None
     
     json_content = json.dumps(content, indent=4, ensure_ascii=False)
     base64_content = base64.b64encode(json_content.encode("utf-8")).decode("utf-8")
@@ -126,7 +126,7 @@ def save_file_to_github(content: dict, file_path: str):
         st.error(f"Ошибка при загрузке на GitHub: {response.status_code}, {response.text}")
         return
     
-    st.success("Файл успешно загружен на GitHub")
+    st.success("Файл успешно загружен на GitHub и обновлён")
 
 # -------------------
 # Универсальная функция parse_prompt
