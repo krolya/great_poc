@@ -57,17 +57,25 @@ def get_airtable_schema():
     
     # Преобразуем объект schema в сериализуемый JSON
     schema_dict = {
-        "tables": [
-            {
-                "name": table.name,
-                "fields": [
-                    {"name": field.name, "type": field.type, "options": field.options}
-                    for field in table.fields
-                ]
-            }
-            for table in schema.tables
-        ]
+        "tables": []
     }
+    
+    for table in schema.tables:
+        table_dict = {
+            "name": table.name,
+            "fields": []
+        }
+        
+        for field in table.fields:
+            field_dict = {"name": field.name, "type": field.type}
+            
+            if hasattr(field, "options"):
+                field_dict["options"] = field.options
+            
+            table_dict["fields"].append(field_dict)
+        
+        schema_dict["tables"].append(table_dict)
+    
     return schema_dict
 
 def upload_schema_to_airtable(schema):
@@ -99,7 +107,7 @@ def save_file_to_github(content: str, file_path: str):
     
     data = {
         "message": "Upload Airtable schema",
-        "content": content.encode("utf-8").decode("utf-8"),
+        "content": json.dumps(content, indent=4, ensure_ascii=False).encode("utf-8").decode("utf-8"),
         "sha": sha
     }
     response = requests.put(url, headers=headers, json=data)
