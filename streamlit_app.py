@@ -55,32 +55,56 @@ def get_airtable_schema():
     api = Api(st.secrets.AIRTABLE_API_TOKEN)
     base_id = st.secrets.AIRTABLE_BASE_ID
     schema = api.base(base_id).schema()
-    
+
     schema_dict = {
         "tables": []
     }
-    
+
     for table in schema.tables:
         table_dict = {
             "name": table.name,
             "fields": []
         }
-        
+
         for field in table.fields:
-            field_dict = {"name": field.name, "type": field.type}
-            
+            field_dict = {
+                "name": field.name,
+                "type": field.type
+            }
+
             if hasattr(field, "options") and isinstance(field.options, dict):
                 field_dict["options"] = field.options
 
-                # Обрабатываем варианты (choices) как для multipleSelects, так и для singleSelect
-                if "choices" in field.options:
-                    # Это именно список возможных вариантов (Choice 1, Choice 2 и т.д.)
-                    field_dict["choices"] = [choice["name"] for choice in field.options["choices"]]
+                # Если это multipleSelects, извлечём все варианты
+                if field.type == "multipleSelects":
+                    if "choices" in field.options:
+                        # Сохраняем все доступные данные: id, name, color
+                        field_dict["choices"] = [
+                            {
+                                "id": choice.get("id"),
+                                "name": choice.get("name"),
+                                "color": choice.get("color")
+                            }
+                            for choice in field.options["choices"]
+                        ]
 
+                # Если это singleSelect, аналогично обрабатываем choices
+                elif field.type == "singleSelect":
+                    if "choices" in field.options:
+                        field_dict["choices"] = [
+                            {
+                                "id": choice.get("id"),
+                                "name": choice.get("name"),
+                                "color": choice.get("color")
+                            }
+                            for choice in field.options["choices"]
+                        ]
+
+            # Добавляем в список полей
             table_dict["fields"].append(field_dict)
-        
+
         schema_dict["tables"].append(table_dict)
-    
+
     return schema_dict
 
 def upload_schema_to_airtable(schema):
