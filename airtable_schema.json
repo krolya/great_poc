@@ -1,1 +1,98 @@
-"{\n    \"tables\": [\n        {\n            \"name\": \"Personas\",\n            \"fields\": [\n                {\n                    \"name\": \"ID\",\n                    \"type\": \"autoNumber\"\n                },\n                {\n                    \"name\": \"Name\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Gender\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Marital status\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Children\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Income\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Age\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"City size\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Region\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Children age 1\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Children age 2\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Children age 3\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Children age 4\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Children age 5\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Tags\",\n                    \"type\": \"multipleSelects\"\n                },\n                {\n                    \"name\": \"Education\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Generation ID\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Generation model\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Personas + responses\",\n                    \"type\": \"multipleRecordLinks\"\n                },\n                {\n                    \"name\": \"Responses\",\n                    \"type\": \"multipleRecordLinks\"\n                },\n                {\n                    \"name\": \"Interests\",\n                    \"type\": \"multipleRecordLinks\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Regions\",\n            \"fields\": [\n                {\n                    \"name\": \"RegionID\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"RegionName\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Country\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Personas\",\n                    \"type\": \"singleLineText\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Cities\",\n            \"fields\": [\n                {\n                    \"name\": \"CityID\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"CityName\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"RegionID\",\n                    \"type\": \"number\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Interests\",\n            \"fields\": [\n                {\n                    \"name\": \"InterestID\",\n                    \"type\": \"autoNumber\"\n                },\n                {\n                    \"name\": \"InterestName\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Personas\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Category\",\n                    \"type\": \"singleSelect\"\n                },\n                {\n                    \"name\": \"Personas 2\",\n                    \"type\": \"multipleRecordLinks\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Marital status\",\n            \"fields\": [\n                {\n                    \"name\": \"ID\",\n                    \"type\": \"autoNumber\"\n                },\n                {\n                    \"name\": \"Name\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Personas\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Personas 2\",\n                    \"type\": \"singleLineText\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Responses\",\n            \"fields\": [\n                {\n                    \"name\": \"ID\",\n                    \"type\": \"autoNumber\"\n                },\n                {\n                    \"name\": \"Ad name\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Response description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Response test ID\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Response clarity score\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Response clarity description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Response likeability score\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Response likeability description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Response trust description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Response trust score\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Response diversity score\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Response diversity description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Response message score\",\n                    \"type\": \"number\"\n                },\n                {\n                    \"name\": \"Response message description\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Response free question 1\",\n                    \"type\": \"multilineText\"\n                },\n                {\n                    \"name\": \"Persona\",\n                    \"type\": \"multipleRecordLinks\"\n                },\n                {\n                    \"name\": \"Persona description\",\n                    \"type\": \"multipleLookupValues\"\n                },\n                {\n                    \"name\": \"Personas\",\n                    \"type\": \"multipleRecordLinks\"\n                },\n                {\n                    \"name\": \"Table 7\",\n                    \"type\": \"singleLineText\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Table 7\",\n            \"fields\": [\n                {\n                    \"name\": \"Name\",\n                    \"type\": \"singleLineText\"\n                },\n                {\n                    \"name\": \"Attachments\",\n                    \"type\": \"multipleAttachments\"\n                }\n            ]\n        }\n    ]\n}"
+{
+    "tables": [
+        {
+            "name": "Personas",
+            "fields": [
+                {"name": "ID", "type": "autoNumber"},
+                {"name": "Name", "type": "multilineText"},
+                {"name": "Gender", "type": "singleSelect"},
+                {"name": "Marital status", "type": "singleSelect"},
+                {"name": "Children", "type": "number"},
+                {"name": "Income", "type": "singleSelect"},
+                {"name": "Age", "type": "number"},
+                {"name": "City size", "type": "singleSelect"},
+                {"name": "Region", "type": "multilineText"},
+                {"name": "Description", "type": "multilineText"},
+                {"name": "Children age 1", "type": "number"},
+                {"name": "Children age 2", "type": "number"},
+                {"name": "Children age 3", "type": "number"},
+                {"name": "Children age 4", "type": "number"},
+                {"name": "Children age 5", "type": "number"},
+                {"name": "Tags", "type": "multipleSelects"},
+                {"name": "Education", "type": "singleSelect"},
+                {"name": "Generation ID", "type": "singleLineText"},
+                {"name": "Generation model", "type": "singleLineText"},
+                {"name": "Personas + responses", "type": "multipleRecordLinks"},
+                {"name": "Responses", "type": "multipleRecordLinks"},
+                {"name": "Interests", "type": "multipleRecordLinks"}
+            ]
+        },
+        {
+            "name": "Regions",
+            "fields": [
+                {"name": "RegionID", "type": "number"},
+                {"name": "RegionName", "type": "multilineText"},
+                {"name": "Country", "type": "singleSelect"},
+                {"name": "Personas", "type": "singleLineText"}
+            ]
+        },
+        {
+            "name": "Cities",
+            "fields": [
+                {"name": "CityID", "type": "number"},
+                {"name": "CityName", "type": "multilineText"},
+                {"name": "RegionID", "type": "number"}
+            ]
+        },
+        {
+            "name": "Interests",
+            "fields": [
+                {"name": "InterestID", "type": "autoNumber"},
+                {"name": "InterestName", "type": "multilineText"},
+                {"name": "Personas", "type": "singleLineText"},
+                {"name": "Category", "type": "singleSelect"},
+                {"name": "Personas 2", "type": "multipleRecordLinks"}
+            ]
+        },
+        {
+            "name": "Marital status",
+            "fields": [
+                {"name": "ID", "type": "autoNumber"},
+                {"name": "Name", "type": "singleLineText"},
+                {"name": "Personas", "type": "singleLineText"},
+                {"name": "Personas 2", "type": "singleLineText"}
+            ]
+        },
+        {
+            "name": "Responses",
+            "fields": [
+                {"name": "ID", "type": "autoNumber"},
+                {"name": "Ad name", "type": "singleLineText"},
+                {"name": "Response description", "type": "multilineText"},
+                {"name": "Response test ID", "type": "singleLineText"},
+                {"name": "Response clarity score", "type": "number"},
+                {"name": "Response clarity description", "type": "multilineText"},
+                {"name": "Response likeability score", "type": "number"},
+                {"name": "Response likeability description", "type": "multilineText"},
+                {"name": "Response trust description", "type": "multilineText"},
+                {"name": "Response trust score", "type": "number"},
+                {"name": "Response diversity score", "type": "number"},
+                {"name": "Response diversity description", "type": "multilineText"},
+                {"name": "Response message score", "type": "number"},
+                {"name": "Response message description", "type": "multilineText"},
+                {"name": "Response free question 1", "type": "multilineText"},
+                {"name": "Persona", "type": "multipleRecordLinks"},
+                {"name": "Persona description", "type": "multipleLookupValues"},
+                {"name": "Personas", "type": "multipleRecordLinks"},
+                {"name": "Table 7", "type": "singleLineText"}
+            ]
+        },
+        {
+            "name": "Table 7",
+            "fields": [
+                {"name": "Name", "type": "singleLineText"},
+                {"name": "Attachments", "type": "multipleAttachments"}
+            ]
+        }
+    ]
+}
