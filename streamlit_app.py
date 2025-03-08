@@ -207,8 +207,8 @@ def openai_chat(system_prompt: str, user_prompt: str, file_messages=None) -> str
         client = OpenAI(api_key=st.secrets.OPENAI_API_KEY)
     else:
         client = OpenAI(
-            base_url="https://api.studio.nebius.ai/v1/",
-            api_key=st.secrets.NEBIUS_API_KEY,
+            base_url="https://api.deepseek.com/v1",
+            api_key=st.secrets.DEEPSEEK_API_KEY,
         )
 
     # Формируем сообщения для запроса
