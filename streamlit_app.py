@@ -941,8 +941,8 @@ def show_generation_tab():
     model_name = st.selectbox(
         "Выберите модель",
         [
-            "deepseek-ai/DeepSeek-V3",
-            "deepseek-ai/DeepSeek-R1",
+            "deepseek-chat",
+            "deepseek-reasoner",
             "meta-llama/Llama-3.3-70B-Instruct",
             "gpt-4o",
             "o1",
