@@ -224,6 +224,7 @@ def openai_chat(system_prompt: str, user_prompt: str, file_messages=None) -> str
     completion = client.chat.completions.create(
         model=model_name,
         messages=messages,
+        max_tokens=8000,
         response_format={"type": "json_object"}
     )
 
