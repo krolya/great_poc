@@ -418,11 +418,11 @@ def openai_chat_bare(system_prompt: str, user_prompt: str, openai_api_key: str, 
 
     global model_name
     if "deepseek" not in model_name.lower():
-        client = OpenAI(api_key=openai_api_key)
+        client = OpenAI(api_key=st.secrets.OPENAI_API_KEY)
     else:
         client = OpenAI(
-            base_url="https://api.studio.nebius.ai/v1/",
-            api_key=nebius_api_key,
+            base_url="https://api.deepseek.com/v1",
+            api_key=st.secrets.DEEPSEEK_API_KEY,
         )
 
     messages = [{"role": "system", "content": system_prompt}]
